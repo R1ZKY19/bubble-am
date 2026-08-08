@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Blob Arena — masuk atau daftar</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="shell">
+  <div class="auth-wrap">
+
+    <div class="blob-panel hero-pane">
+      <div class="brand-lockup">
+        <div class="brandmark"><span></span><span></span></div>
+        <div class="name">Blob <em>Arena</em></div>
+      </div>
+      <h1>Tumbuh, telan, <em>bertahan</em>.</h1>
+      <p>Kendalikan selmu di antara ribuan pemain lain, kumpulkan poin dari setiap pertandingan, lalu pakai foto pribadimu sebagai skin sel. Progresmu tersimpan online di akunmu.</p>
+      <div class="feature-row">
+        <div class="stat"><b>Online</b><span>Akun tersimpan</span></div>
+        <div class="stat"><b>Poin</b><span>Dari tiap match</span></div>
+        <div class="stat"><b>Skin foto</b><span>PNG / JPG sendiri</span></div>
+      </div>
+    </div>
+
+    <div class="blob-panel auth-card">
+      <div id="setupBanner" class="setup-banner">
+        ⚠️ <b>Firebase belum dikonfigurasi.</b> Login &amp; daftar akun butuh backend gratis.
+        Buka <code>js/firebase-config.js</code> dan isi dengan config project Firebase-mu.
+        Panduan lengkap ada di <code>README.md</code>.
+      </div>
+
+      <div id="authCardBody">
+        <div class="tabs">
+          <button id="tabLogin" class="active" type="button">Masuk</button>
+          <button id="tabRegister" type="button">Daftar</button>
+        </div>
+
+        <div id="authMsg" class="msg"></div>
+
+        <form id="formLogin" class="form-panel active">
+          <div class="field">
+            <label for="loginEmail">Email</label>
+            <input id="loginEmail" type="email" required autocomplete="email" placeholder="kamu@email.com">
+          </div>
+          <div class="field">
+            <label for="loginPass">Kata sandi</label>
+            <input id="loginPass" type="password" required autocomplete="current-password" placeholder="••••••••">
+          </div>
+          <button id="loginBtn" class="primary-btn" type="submit">Masuk</button>
+          <p class="fine-print">Belum punya akun? Klik tab "Daftar" di atas.</p>
+        </form>
+
+        <form id="formRegister" class="form-panel">
+          <div class="field">
+            <label for="regName">Nama panggilan</label>
+            <input id="regName" type="text" required maxlength="14" placeholder="Muncul di dalam game">
+          </div>
+          <div class="field">
+            <label for="regEmail">Email</label>
+            <input id="regEmail" type="email" required autocomplete="email" placeholder="kamu@email.com">
+          </div>
+          <div class="field">
+            <label for="regPass">Kata sandi</label>
+            <input id="regPass" type="password" required minlength="6" autocomplete="new-password" placeholder="Minimal 6 karakter">
+          </div>
+          <button id="regBtn" class="primary-btn" type="submit">Daftar &amp; mulai main</button>
+          <p class="fine-print">Poin dan skin fotomu tersimpan ke akun ini.</p>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script src="js/firebase-config.js"></script>
+<script type="module" src="js/auth.js"></script>
+</body>
+</html>
