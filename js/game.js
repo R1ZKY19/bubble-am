@@ -55,22 +55,41 @@ function runGame(){
     currentUser = user;
     playerDocRef = doc(db, 'players', user.uid);
 
-    const snap = await getDoc(playerDocRef);
-    const data = snap.exists() ? snap.data() : { name: user.displayName || 'Pemain', points: 0, skinData: null };
+    try {
+      const snap = await getDoc(playerDocRef);
+      const data = snap.exists() ? snap.data() : { name: user.displayName || 'Pemain', points: 0, skinData: null };
 
-    nameChip.textContent = data.name || 'Pemain';
-    accountPoints = data.points || 0;
-    pointsVal.textContent = accountPoints;
+      nameChip.textContent = data.name || 'Pemain';
+      accountPoints = data.points || 0;
+      pointsVal.textContent = accountPoints;
 
-    if (data.skinData) {
-      applySkinURL(data.skinData);
+      if (data.skinData) {
+        applySkinURL(data.skinData);
+      }
+
+      startTitle.textContent = 'Siap bertarung, ' + (data.name || 'Pemain') + '?';
+      startSub.textContent = 'Gerakkan mouse untuk mengarahkan sel, tekan spasi untuk boost.';
+      skinRow.style.display = 'flex';
+      startBtn.style.display = 'block';
+    } catch (err) {
+      console.error('Gagal memuat profil pemain:', err);
+      startTitle.textContent = 'Gagal memuat profil';
+      if ((err.code || '').includes('permission-denied')) {
+        startSub.innerHTML = 'Firestore menolak akses (permission-denied). Terapkan <b>Firestore Rules</b> dari README.md — Firestore Database → Rules di Firebase Console — lalu klik <b>Publish</b> dan muat ulang halaman ini.';
+      } else {
+        startSub.textContent = 'Error: ' + (err.message || err.code || 'tidak diketahui') + '. Coba muat ulang halaman.';
+      }
     }
-
-    startTitle.textContent = 'Siap bertarung, ' + (data.name || 'Pemain') + '?';
-    startSub.textContent = 'Gerakkan mouse untuk mengarahkan sel, tekan spasi untuk boost.';
-    skinRow.style.display = 'flex';
-    startBtn.style.display = 'block';
   });
+
+  // Kalau pemeriksaan akun tidak selesai sama sekali (mis. Firestore Database
+  // belum dibuat di Firebase Console), jangan biarkan macet tanpa keterangan.
+  setTimeout(() => {
+    if (startBtn.style.display !== 'block' && !startOverlay.classList.contains('hidden')) {
+      startTitle.textContent = 'Masih memuat...';
+      startSub.innerHTML = 'Kalau ini terus muncul, cek: (1) Firestore Database sudah dibuat di Firebase Console, (2) Firestore Rules sudah di-Publish, (3) buka Console browser (F12) untuk lihat pesan error persis.';
+    }
+  }, 8000);
 
   function applySkinURL(url){
     const img = new Image();
