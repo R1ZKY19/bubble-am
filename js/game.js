@@ -5,7 +5,9 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import { getFirestore, doc, getDoc, updateDoc, increment, setDoc } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
-import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-storage.js";
+// Catatan: skin foto TIDAK memakai Firebase Storage (butuh paket berbayar Blaze).
+// Foto dikompres jadi gambar kecil di browser lalu disimpan sebagai teks base64
+// langsung di dokumen Firestore pemain — tetap gratis.
 
 const startOverlay = document.getElementById('startOverlay');
 const startTitle = document.getElementById('startTitle');
@@ -37,7 +39,6 @@ function runGame(){
   const app = initializeApp(window.FIREBASE_CONFIG);
   const auth = getAuth(app);
   const db = getFirestore(app);
-  const storage = getStorage(app);
 
   let currentUser = null;
   let playerDocRef = null;
@@ -55,14 +56,14 @@ function runGame(){
     playerDocRef = doc(db, 'players', user.uid);
 
     const snap = await getDoc(playerDocRef);
-    const data = snap.exists() ? snap.data() : { name: user.displayName || 'Pemain', points: 0, skinURL: null };
+    const data = snap.exists() ? snap.data() : { name: user.displayName || 'Pemain', points: 0, skinData: null };
 
     nameChip.textContent = data.name || 'Pemain';
     accountPoints = data.points || 0;
     pointsVal.textContent = accountPoints;
 
-    if (data.skinURL) {
-      applySkinURL(data.skinURL);
+    if (data.skinData) {
+      applySkinURL(data.skinData);
     }
 
     startTitle.textContent = 'Siap bertarung, ' + (data.name || 'Pemain') + '?';
@@ -84,6 +85,27 @@ function runGame(){
 
   openSkinBtn.addEventListener('click', () => skinFile.click());
 
+  // Kompres foto jadi gambar bulat kecil (160x160 JPEG) di browser, lalu
+  // simpan sebagai base64 langsung ke Firestore — tidak butuh Storage.
+  function compressImageToDataURL(file, size = 160, quality = 0.82){
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvasEl = document.createElement('canvas');
+        canvasEl.width = size; canvasEl.height = size;
+        const cctx = canvasEl.getContext('2d');
+        // crop-to-square (cover) so the photo fills the circle nicely
+        const s = Math.min(img.width, img.height);
+        const sx = (img.width - s) / 2, sy = (img.height - s) / 2;
+        cctx.drawImage(img, sx, sy, s, s, 0, 0, size, size);
+        resolve(canvasEl.toDataURL('image/jpeg', quality));
+        URL.revokeObjectURL(img.src);
+      };
+      img.onerror = () => reject(new Error('File gambar tidak valid.'));
+      img.src = URL.createObjectURL(file);
+    });
+  }
+
   skinFile.addEventListener('change', async () => {
     const file = skinFile.files[0];
     if (!file || !currentUser) return;
@@ -91,19 +113,17 @@ function runGame(){
       alert('Hanya file PNG atau JPG yang didukung.');
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Ukuran file maksimal 2MB.');
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Ukuran file maksimal 8MB (akan dikompres otomatis).');
       return;
     }
     try {
-      const path = `skins/${currentUser.uid}.${file.type === 'image/png' ? 'png' : 'jpg'}`;
-      const storageRef = ref(storage, path);
-      await uploadBytes(storageRef, file);
-      const url = await getDownloadURL(storageRef);
-      await updateDoc(playerDocRef, { skinURL: url });
-      applySkinURL(url);
+      const dataURL = await compressImageToDataURL(file);
+      // dokumen Firestore dibatasi ~1MB; hasil kompresi 160x160 JPEG jauh di bawah itu
+      await updateDoc(playerDocRef, { skinData: dataURL });
+      applySkinURL(dataURL);
     } catch (err) {
-      alert('Gagal mengunggah skin: ' + err.message);
+      alert('Gagal memproses skin: ' + err.message);
     }
   });
 

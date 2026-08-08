@@ -83,7 +83,7 @@ if (!configured) {
         name,
         points: 0,
         bestMass: 0,
-        skinURL: null,
+        skinData: null,
         createdAt: serverTimestamp()
       });
       showMsg('Akun dibuat! Mengalihkan ke arena…', 'ok');
@@ -110,7 +110,7 @@ if (!configured) {
       if (!snap.exists()) {
         await setDoc(ref, {
           name: cred.user.displayName || 'Pemain',
-          points: 0, bestMass: 0, skinURL: null, createdAt: serverTimestamp()
+          points: 0, bestMass: 0, skinData: null, createdAt: serverTimestamp()
         });
       }
       window.location.href = 'game.html';

@@ -47,6 +47,11 @@
       </div>
       <h2 id="startTitle">Memeriksa akun<span class="loading-dots"><span></span><span></span><span></span></span></h2>
       <p id="startSub">Mohon tunggu sebentar.</p>
+      <p id="fileProtocolWarn" style="display:none; color:#fde68a; font-size:13px;">
+        ⚠️ Halaman ini dibuka lewat <code>file://</code> — browser memblokir script game.
+        Jalankan lewat server lokal atau lewat alamat GitHub Pages, bukan dengan
+        membuka file HTML secara langsung.
+      </p>
 
       <div class="skin-upload-row" id="skinRow" style="display:none;">
         <div class="preview" id="skinPreview"></div>
@@ -70,6 +75,11 @@
   </div>
 </div>
 
+<script>
+  if (location.protocol === 'file:') {
+    document.getElementById('fileProtocolWarn').style.display = 'block';
+  }
+</script>
 <script src="js/firebase-config.js"></script>
 <script type="module" src="js/game.js"></script>
 </body>
