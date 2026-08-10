@@ -9,6 +9,18 @@ Game kloning Agar.io dengan:
 Karena GitHub Pages hanya hosting statis (tidak ada server), akun & database
 memakai **Firebase** (gratis untuk skala kecil, cukup 1 akun Google).
 
+### Kontrol dalam game
+
+| Tombol | Aksi |
+|---|---|
+| Gerakkan mouse | Mengarahkan sel |
+| Spasi | Pecah sel (sampai maksimum 12 sel), sesuai mekanik game aslinya |
+| W atau E | Keluarkan sedikit massa sebagai makanan (beri makan) |
+| ESC | Jeda — menampilkan nama, level, poin akun, dan massa saat ini |
+
+Sel hasil pecahan otomatis menyatu kembali ke sel induk setelah ~15 detik
+kalau saling menempel. Level dihitung otomatis dari total poin akun.
+
 > **Catatan:** project ini sengaja **tidak memakai Firebase Storage**, karena
 > sejak akhir 2024 Storage mewajibkan paket berbayar (Blaze) walau cuma
 > dipakai sedikit. Foto skin dikompres jadi gambar kecil (160×160) langsung

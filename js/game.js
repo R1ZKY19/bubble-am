@@ -1,6 +1,7 @@
 // ============================================================
 // BLOB ARENA — game.js
 // Engine kanvas + integrasi akun (auth guard, poin, skin foto)
+// Kontrol: mouse gerak, SPASI pecah sel (maks 12), W/E beri makan, ESC jeda
 // ============================================================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
@@ -22,11 +23,26 @@ const finalMassEl = document.getElementById('finalMass');
 const earnedPointsEl = document.getElementById('earnedPoints');
 const massVal = document.getElementById('massVal');
 const pointsVal = document.getElementById('pointsVal');
+const levelVal = document.getElementById('levelVal');
+const cellsVal = document.getElementById('cellsVal');
 const nameChip = document.getElementById('nameChip');
 const avatarChip = document.getElementById('avatarChip');
 const logoutBtn = document.getElementById('logoutBtn');
 const openSkinBtn = document.getElementById('openSkinBtn');
 const lbList = document.getElementById('lbList');
+
+// Pause (ESC) overlay elements
+const pauseOverlay = document.getElementById('pauseOverlay');
+const pauseNameEl = document.getElementById('pauseName');
+const pauseLevelEl = document.getElementById('pauseLevel');
+const pausePointsEl = document.getElementById('pausePoints');
+const pauseMassEl = document.getElementById('pauseMass');
+const resumeBtn = document.getElementById('resumeBtn');
+const pauseQuitBtn = document.getElementById('pauseQuitBtn');
+
+function calcLevel(points){
+  return Math.max(1, Math.floor(1 + Math.sqrt(Math.max(0, points) / 25)));
+}
 
 if (!window.FIREBASE_CONFIGURED) {
   startTitle.textContent = 'Firebase belum dikonfigurasi';
@@ -62,13 +78,14 @@ function runGame(){
       nameChip.textContent = data.name || 'Pemain';
       accountPoints = data.points || 0;
       pointsVal.textContent = accountPoints;
+      levelVal.textContent = calcLevel(accountPoints);
 
       if (data.skinData) {
         applySkinURL(data.skinData);
       }
 
       startTitle.textContent = 'Siap bertarung, ' + (data.name || 'Pemain') + '?';
-      startSub.textContent = 'Gerakkan mouse untuk mengarahkan sel, tekan spasi untuk boost.';
+      startSub.textContent = 'Gerakkan mouse untuk mengarahkan sel, spasi untuk pecah, W/E untuk beri makan.';
       skinRow.style.display = 'flex';
       startBtn.style.display = 'block';
     } catch (err) {
@@ -160,54 +177,208 @@ function runGame(){
   const COLORS = ['#5eead4','#f472b6','#facc15','#818cf8','#fb923c','#4ade80','#60a5fa','#e879f9'];
   const BOT_NAMES = ['Cua','Sói','Bọt','Ma','Sấm','Lửa','Trăng','Sao','Gió','Bão'];
 
+  // Aturan sel & kontrol, dibuat mendekati game aslinya
+  const MAX_CELLS = 12;             // batas jumlah sel pemain (spasi maks membelah sampai sini)
+  const MIN_SPLIT_MASS = 36;        // massa minimum sebuah sel supaya bisa dipecah
+  const RECOMBINE_TIME = 15;        // detik sebelum sel hasil pecahan bisa menyatu lagi
+  const SPLIT_COOLDOWN = 0.16;      // jeda minimum antar-penekanan spasi
+  const MIN_EJECT_MASS = 24;        // massa minimum untuk bisa memberi makan (W/E)
+  const EJECT_MASS_LOSS = 14;       // massa yang hilang saat memberi makan
+  const EJECT_PELLET_MASS = 7;      // nilai makanan yang dikeluarkan
+  const EJECT_COOLDOWN = 0.12;
+
   function rand(a,b){ return Math.random()*(b-a)+a; }
   function dist(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
   function massToRadius(m){ return 6 + Math.sqrt(m)*3.2; }
   function clamp(v,lo,hi){ return Math.max(lo, Math.min(hi, v)); }
+  function lighten(hex){
+    const n = parseInt(hex.replace('#',''), 16);
+    const r = Math.min(255, (n>>16) + 45);
+    const g = Math.min(255, ((n>>8)&0xff) + 45);
+    const b = Math.min(255, (n&0xff) + 45);
+    return `rgb(${r},${g},${b})`;
+  }
 
   let food = [], cells = [], particles = [];
   let camera = { x: WORLD.w/2, y: WORLD.h/2, zoom: 1 };
   let mouse = { x: innerWidth/2, y: innerHeight/2 };
-  let boosting = false, running = false, player = null, rafId = null, lastT = 0;
-  let sessionStartMass = 26;
+  let running = false, paused = false, player = null, rafId = null, lastT = 0;
+  let sessionStartMass = 26, lastKnownMass = 26, gameTime = 0;
+  let lastSplitTime = -10, lastEjectTime = -10;
+  let lbTimer = 0;
 
   function spawnFood(n){
     for(let i=0;i<n;i++){
       food.push({ x: rand(20,WORLD.w-20), y: rand(20,WORLD.h-20), r: rand(3,5.5), color: COLORS[Math.floor(rand(0,COLORS.length))] });
     }
   }
-  function makeCell(name, isPlayer, x, y, mass, color){
+  function makeCell(name, isPlayer, x, y, mass, color, ownerId){
+    const id = Math.random().toString(36).slice(2);
+    const m = mass ?? rand(18,30);
     return {
-      id: Math.random().toString(36).slice(2), name, isPlayer,
+      id, name, isPlayer,
+      ownerId: ownerId || (isPlayer ? 'player' : id),
       x: x ?? rand(200, WORLD.w-200), y: y ?? rand(200, WORLD.h-200),
-      mass: mass ?? rand(18,30), color: color ?? COLORS[Math.floor(rand(0,COLORS.length))],
-      vx:0, vy:0, targetX:0, targetY:0, wanderT: rand(0,10), alive:true
+      mass: m, color: color ?? COLORS[Math.floor(rand(0,COLORS.length))],
+      vx:0, vy:0, impulseX:0, impulseY:0,
+      targetX:0, targetY:0, wanderT: rand(0,10),
+      alive:true, splitAt: 0, r: massToRadius(m)
     };
   }
 
   function resetWorld(){
     food = []; cells = []; particles = [];
     spawnFood(FOOD_COUNT);
-    player = makeCell(nameChip.textContent, true, WORLD.w/2, WORLD.h/2, 26, '#5eead4');
-    sessionStartMass = player.mass;
+    player = makeCell(nameChip.textContent, true, WORLD.w/2, WORLD.h/2, 26, '#5eead4', 'player');
+    sessionStartMass = 26; lastKnownMass = 26; gameTime = 0;
     cells.push(player);
     for(let i=0;i<BOT_COUNT;i++){
       cells.push(makeCell(BOT_NAMES[i % BOT_NAMES.length] + (i>=BOT_NAMES.length?i:''), false, null, null, rand(16,60)));
     }
   }
 
+  function playerCellCount(){
+    let n = 0;
+    for(const c of cells) if(c.alive && c.ownerId==='player') n++;
+    return n;
+  }
+
+  function getWorldMouse(){
+    return {
+      x: camera.x + (mouse.x - W/2)/camera.zoom,
+      y: camera.y + (mouse.y - H/2)/camera.zoom
+    };
+  }
+
   canvas.addEventListener('mousemove', e=>{ mouse.x = e.clientX; mouse.y = e.clientY; });
-  window.addEventListener('keydown', e=>{ if(e.code==='Space'){ boosting = true; e.preventDefault(); } });
-  window.addEventListener('keyup', e=>{ if(e.code==='Space') boosting = false; });
   canvas.addEventListener('touchmove', e=>{ const t=e.touches[0]; if(t){ mouse.x=t.clientX; mouse.y=t.clientY; } }, {passive:true});
 
+  window.addEventListener('keydown', e=>{
+    if(e.code === 'Escape'){ e.preventDefault(); togglePause(); return; }
+    if(!running || paused) return;
+    if(e.code === 'Space'){
+      e.preventDefault();
+      if(e.repeat) return;
+      if(gameTime - lastSplitTime < SPLIT_COOLDOWN) return;
+      lastSplitTime = gameTime;
+      doSplit();
+    } else if(e.code === 'KeyW' || e.code === 'KeyE'){
+      if(gameTime - lastEjectTime < EJECT_COOLDOWN) return;
+      lastEjectTime = gameTime;
+      doEject();
+    }
+  });
+
+  // ---------- pecah sel (SPASI), maks MAX_CELLS ----------
+  function splitCell(c, dirX, dirY){
+    const newMass = c.mass/2;
+    c.mass = newMass;
+    c.splitAt = gameTime;
+    const child = makeCell(c.name, true, c.x + dirX*4, c.y + dirY*4, newMass, c.color, 'player');
+    child.splitAt = gameTime;
+    const impulse = 640;
+    c.impulseX = -dirX*impulse*0.25; c.impulseY = -dirY*impulse*0.25;
+    child.impulseX = dirX*impulse; child.impulseY = dirY*impulse;
+    cells.push(child);
+    for(let k=0;k<10;k++){
+      particles.push({x:c.x,y:c.y,r:rand(2,5),life:0.35,color:'rgba(255,255,255,0.85)'});
+    }
+  }
+
+  function doSplit(){
+    const wm = getWorldMouse();
+    const targets = cells.filter(c=>c.alive && c.ownerId==='player');
+    for(const c of targets){
+      if(playerCellCount() >= MAX_CELLS) break;
+      if(c.mass < MIN_SPLIT_MASS) continue;
+      const dx = wm.x-c.x, dy = wm.y-c.y; const len = Math.hypot(dx,dy) || 1;
+      splitCell(c, dx/len, dy/len);
+    }
+  }
+
+  // ---------- beri makan (W / E) ----------
+  function ejectFromCell(c, dirX, dirY){
+    if(c.mass < MIN_EJECT_MASS) return;
+    c.mass -= EJECT_MASS_LOSS;
+    const r = massToRadius(c.mass);
+    const startDist = r + 10;
+    const speed = 760;
+    food.push({
+      x: c.x + dirX*startDist, y: c.y + dirY*startDist,
+      r: 7.5, color: c.color,
+      vx: dirX*speed, vy: dirY*speed,
+      mass: EJECT_PELLET_MASS
+    });
+    particles.push({x:c.x+dirX*r, y:c.y+dirY*r, r:5, life:0.25, color:c.color});
+  }
+
+  function doEject(){
+    const wm = getWorldMouse();
+    const targets = cells.filter(c=>c.alive && c.ownerId==='player');
+    for(const c of targets){
+      const dx = wm.x-c.x, dy = wm.y-c.y; const len = Math.hypot(dx,dy) || 1;
+      ejectFromCell(c, dx/len, dy/len);
+    }
+  }
+
+  // ---------- jeda (ESC) ----------
+  function togglePause(){
+    if(!running) return;
+    paused = !paused;
+    if(paused){
+      pauseNameEl.textContent = nameChip.textContent;
+      pauseLevelEl.textContent = calcLevel(accountPoints);
+      pausePointsEl.textContent = accountPoints;
+      pauseMassEl.textContent = Math.round(lastKnownMass);
+      pauseOverlay.classList.remove('hidden');
+      cancelAnimationFrame(rafId);
+    } else {
+      pauseOverlay.classList.add('hidden');
+      lastT = performance.now();
+      rafId = requestAnimationFrame(loop);
+    }
+  }
+  resumeBtn.addEventListener('click', togglePause);
+  pauseQuitBtn.addEventListener('click', () => { window.location.href = 'index.html'; });
+
+  // ---------- tabrakan antar sel milik pemain sendiri (dorong / menyatu) ----------
+  function handlePlayerSelfCollisions(){
+    const pc = cells.filter(c=>c.alive && c.ownerId==='player');
+    for(let i=0;i<pc.length;i++){
+      const a = pc[i];
+      if(!a.alive) continue;
+      for(let j=i+1;j<pc.length;j++){
+        const b = pc[j];
+        if(!b.alive) continue;
+        const ra = massToRadius(a.mass), rb = massToRadius(b.mass);
+        const d = dist(a,b) || 0.001;
+        const canMerge = (gameTime - a.splitAt > RECOMBINE_TIME) && (gameTime - b.splitAt > RECOMBINE_TIME);
+        if(canMerge && d < Math.max(ra,rb)*0.7){
+          a.mass += b.mass;
+          b.alive = false;
+        } else {
+          const minD = (ra+rb)*0.92;
+          if(d < minD){
+            const overlap = (minD-d)/2;
+            const nx = (a.x-b.x)/d, ny = (a.y-b.y)/d;
+            a.x += nx*overlap; a.y += ny*overlap;
+            b.x -= nx*overlap; b.y -= ny*overlap;
+          }
+        }
+      }
+    }
+  }
+
   function update(dt){
-    if(!player || !player.alive) return;
+    if(!running) return;
+    gameTime += dt;
+    const wm = getWorldMouse();
+
     for(const c of cells){
       if(!c.alive) continue;
       let dx, dy;
-      if(c.isPlayer){
-        dx = mouse.x - W/2; dy = mouse.y - H/2;
+      if(c.ownerId === 'player'){
+        dx = wm.x - c.x; dy = wm.y - c.y;
       } else {
         c.wanderT -= dt;
         let threat=null, prey=null, threatD=Infinity, preyD=Infinity;
@@ -227,14 +398,28 @@ function runGame(){
         }
       }
       const len = Math.hypot(dx,dy) || 1;
-      const speed = (c.isPlayer && boosting ? 1.6:1) * clamp(220/Math.sqrt(c.mass), 40, 200);
+      const speed = clamp(235/Math.sqrt(c.mass), 45, 210);
       c.vx = (dx/len)*speed; c.vy = (dy/len)*speed;
-      if(c.isPlayer && boosting && c.mass>20){
-        c.mass -= dt*4;
-        if(Math.random()<0.4) particles.push({x:c.x,y:c.y,r:massToRadius(c.mass)*0.3,life:0.4,color:c.color});
+
+      c.impulseX = (c.impulseX||0) * Math.exp(-dt*6);
+      c.impulseY = (c.impulseY||0) * Math.exp(-dt*6);
+
+      const r = massToRadius(c.mass);
+      c.x = clamp(c.x + (c.vx+c.impulseX)*dt, r, WORLD.w-r);
+      c.y = clamp(c.y + (c.vy+c.impulseY)*dt, r, WORLD.h-r);
+      c.r = c.r===undefined ? r : c.r + (r-c.r)*clamp(dt*10,0,1);
+    }
+
+    // gerakkan makanan yang baru dikeluarkan (W/E) lalu perlambat
+    for(const f of food){
+      if(f.vx || f.vy){
+        f.x += f.vx*dt; f.y += f.vy*dt;
+        const decay = Math.exp(-dt*3.2);
+        f.vx *= decay; f.vy *= decay;
+        f.x = clamp(f.x, f.r, WORLD.w-f.r);
+        f.y = clamp(f.y, f.r, WORLD.h-f.r);
+        if(Math.abs(f.vx)<3 && Math.abs(f.vy)<3){ f.vx=0; f.vy=0; }
       }
-      c.x = clamp(c.x + c.vx*dt, massToRadius(c.mass), WORLD.w-massToRadius(c.mass));
-      c.y = clamp(c.y + c.vy*dt, massToRadius(c.mass), WORLD.h-massToRadius(c.mass));
     }
 
     for(const c of cells){
@@ -242,7 +427,10 @@ function runGame(){
       const r = massToRadius(c.mass);
       for(let i=food.length-1;i>=0;i--){
         const f = food[i];
-        if(Math.hypot(c.x-f.x, c.y-f.y) < r){ c.mass += f.r*0.9; food.splice(i,1); }
+        if(Math.hypot(c.x-f.x, c.y-f.y) < r){
+          c.mass += (f.mass !== undefined ? f.mass : f.r*0.9);
+          food.splice(i,1);
+        }
       }
     }
     while(food.length < FOOD_COUNT) spawnFood(1);
@@ -254,12 +442,12 @@ function runGame(){
         if(i===j) continue;
         const b = cells[j];
         if(!b.alive) continue;
+        if(a.ownerId === b.ownerId) continue; // sesama sel pemain ditangani terpisah
         if(a.mass > b.mass*1.15){
           const ra = massToRadius(a.mass);
           if(dist(a,b) < ra*0.85){
             a.mass += b.mass*0.8;
             b.alive = false;
-            if(b.isPlayer) onPlayerDeath();
             if(!b.isPlayer){
               setTimeout(()=>{
                 if(!running) return;
@@ -273,22 +461,39 @@ function runGame(){
       }
     }
 
-    if(player.alive){
-      camera.x += (player.x-camera.x)*0.12;
-      camera.y += (player.y-camera.y)*0.12;
-      const tz = clamp(1.15-(player.mass-26)/500, 0.45, 1.15);
-      camera.zoom += (tz-camera.zoom)*0.05;
-      massVal.textContent = Math.round(player.mass);
+    handlePlayerSelfCollisions();
+    cells = cells.filter(c => c.alive);
+
+    const alivePlayerCells = cells.filter(c=>c.alive && c.ownerId==='player');
+    if(alivePlayerCells.length){
+      let totalMass=0, cx=0, cy=0;
+      for(const c of alivePlayerCells){ totalMass += c.mass; cx += c.x*c.mass; cy += c.y*c.mass; }
+      cx/=totalMass; cy/=totalMass;
+      camera.x += (cx-camera.x)*0.18;
+      camera.y += (cy-camera.y)*0.18;
+      const tz = clamp(1.15-(totalMass-26)/550, 0.28, 1.15);
+      camera.zoom += (tz-camera.zoom)*0.08;
+      lastKnownMass = totalMass;
+
+      const roundedMass = Math.round(totalMass);
+      if(massVal.textContent !== String(roundedMass)) massVal.textContent = roundedMass;
+      const cellLabel = alivePlayerCells.length + '/' + MAX_CELLS;
+      if(cellsVal.textContent !== cellLabel) cellsVal.textContent = cellLabel;
+    } else if(running){
+      onPlayerDeath();
     }
+
     particles.forEach(p=>p.life-=dt);
     particles = particles.filter(p=>p.life>0);
   }
 
   async function onPlayerDeath(){
     running = false;
+    paused = false;
     cancelAnimationFrame(rafId);
-    const earned = Math.max(0, Math.round(player.mass - sessionStartMass));
-    finalMassEl.textContent = Math.round(player.mass);
+    pauseOverlay.classList.add('hidden');
+    const earned = Math.max(0, Math.round(lastKnownMass - sessionStartMass));
+    finalMassEl.textContent = Math.round(lastKnownMass);
     earnedPointsEl.textContent = '+' + earned;
     deathOverlay.classList.remove('hidden');
 
@@ -296,10 +501,11 @@ function runGame(){
       try {
         await updateDoc(playerDocRef, {
           points: increment(earned),
-          bestMass: Math.max(Math.round(player.mass), 0)
+          bestMass: Math.max(Math.round(lastKnownMass), 0)
         });
         accountPoints += earned;
         pointsVal.textContent = accountPoints;
+        levelVal.textContent = calcLevel(accountPoints);
       } catch (err) {
         console.warn('Gagal menyimpan poin:', err.message);
       }
@@ -307,7 +513,7 @@ function runGame(){
   }
 
   function drawCell(c){
-    const r = massToRadius(c.mass);
+    const r = c.r || massToRadius(c.mass);
     ctx.save();
     ctx.beginPath();
     ctx.arc(c.x, c.y, r, 0, Math.PI*2);
@@ -323,17 +529,29 @@ function runGame(){
       ctx.strokeStyle = 'rgba(94,234,212,0.9)';
       ctx.stroke();
     } else {
-      ctx.fillStyle = c.color;
+      const grad = ctx.createRadialGradient(c.x-r*0.3, c.y-r*0.3, r*0.1, c.x, c.y, r);
+      grad.addColorStop(0, lighten(c.color));
+      grad.addColorStop(1, c.color);
+      ctx.fillStyle = grad;
       ctx.fill();
       ctx.lineWidth = 2.5;
-      ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.28)';
       ctx.stroke();
       ctx.restore();
     }
-    ctx.fillStyle = 'rgba(5,10,18,0.9)';
-    ctx.font = `700 ${clamp(r*0.3,10,20)}px 'Space Grotesk', sans-serif`;
+    const fontSize = clamp(r*0.32,10,22);
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText(c.name, c.x, c.y + r + 12);
+    ctx.font = `700 ${fontSize}px 'Space Grotesk', sans-serif`;
+    const nameY = c.y - (r>26 ? 4 : 0);
+    ctx.lineWidth = 3; ctx.strokeStyle = 'rgba(5,10,18,0.55)';
+    ctx.strokeText(c.name, c.x, nameY);
+    ctx.fillStyle = '#fff';
+    ctx.fillText(c.name, c.x, nameY);
+    if(r > 26){
+      ctx.font = `500 ${clamp(fontSize*0.62,9,14)}px 'JetBrains Mono', monospace`;
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.fillText(Math.round(c.mass), c.x, nameY + fontSize*0.85);
+    }
   }
 
   function draw(){
@@ -368,8 +586,16 @@ function runGame(){
   }
 
   function updateLB(){
-    const ranked = [...cells].filter(c=>c.alive).sort((a,b)=>b.mass-a.mass).slice(0,6);
-    lbList.innerHTML = ranked.map(c=>`<li class="${c.isPlayer?'me':''}">${c.name} — ${Math.round(c.mass)}</li>`).join('');
+    const groups = new Map();
+    for(const c of cells){
+      if(!c.alive) continue;
+      const key = c.ownerId;
+      const g = groups.get(key) || { name: c.name, mass: 0, isPlayer: c.ownerId==='player' };
+      g.mass += c.mass;
+      groups.set(key, g);
+    }
+    const ranked = [...groups.values()].sort((a,b)=>b.mass-a.mass).slice(0,6);
+    lbList.innerHTML = ranked.map(g=>`<li class="${g.isPlayer?'me':''}">${g.name} — ${Math.round(g.mass)}</li>`).join('');
   }
 
   function loop(now){
@@ -377,14 +603,17 @@ function runGame(){
     lastT = now;
     update(dt);
     draw();
-    updateLB();
-    if(running) rafId = requestAnimationFrame(loop);
+    lbTimer += dt;
+    if(lbTimer > 0.25){ updateLB(); lbTimer = 0; }
+    if(running && !paused) rafId = requestAnimationFrame(loop);
   }
 
   function beginMatch(){
     resetWorld();
     startOverlay.classList.add('hidden');
     deathOverlay.classList.add('hidden');
+    pauseOverlay.classList.add('hidden');
+    paused = false;
     running = true;
     lastT = performance.now();
     rafId = requestAnimationFrame(loop);

@@ -18,8 +18,16 @@
       <div class="value" id="massVal">0</div>
     </div>
     <div class="hud-card">
+      <div class="label">Level</div>
+      <div class="value level" id="levelVal">1</div>
+    </div>
+    <div class="hud-card">
       <div class="label">Poin akun</div>
       <div class="value energy" id="pointsVal">0</div>
+    </div>
+    <div class="hud-card small">
+      <div class="label">Sel</div>
+      <div class="value cellcount" id="cellsVal">1/12</div>
     </div>
   </div>
 
@@ -36,7 +44,12 @@
     </div>
   </div>
 
-  <div class="hint">Gerakkan mouse untuk bergerak · Spasi untuk boost</div>
+  <div class="hint">
+    <span><b>Mouse</b> gerak</span>
+    <span><b>Spasi</b> pecah sel</span>
+    <span><b>W / E</b> beri makan</span>
+    <span><b>ESC</b> jeda</span>
+  </div>
 
   <!-- Start / auth-checking overlay -->
   <div class="overlay" id="startOverlay">
@@ -71,6 +84,34 @@
       <p>Massa akhir: <b id="finalMass">0</b><br>
          Poin didapat match ini: <span class="earned" id="earnedPoints">+0</span></p>
       <button class="primary-btn" id="retryBtn" style="width:100%;">Main lagi</button>
+    </div>
+  </div>
+
+  <!-- Pause overlay (ESC) -->
+  <div class="overlay hidden" id="pauseOverlay">
+    <div class="blob-panel panel">
+      <h2>Dijeda</h2>
+      <p class="pause-note">Tekan <b>ESC</b> lagi atau klik Lanjutkan untuk kembali.</p>
+      <div class="pause-stats">
+        <div class="pause-stat">
+          <div class="label">Nama</div>
+          <div class="value" id="pauseName">—</div>
+        </div>
+        <div class="pause-stat">
+          <div class="label">Level</div>
+          <div class="value" id="pauseLevel">1</div>
+        </div>
+        <div class="pause-stat">
+          <div class="label">Poin akun</div>
+          <div class="value energy" id="pausePoints">0</div>
+        </div>
+        <div class="pause-stat">
+          <div class="label">Massa saat ini</div>
+          <div class="value" id="pauseMass">0</div>
+        </div>
+      </div>
+      <button class="primary-btn" id="resumeBtn" style="width:100%;">Lanjutkan</button>
+      <button class="ghost-btn" id="pauseQuitBtn" style="width:100%;">Keluar ke menu utama</button>
     </div>
   </div>
 </div>
