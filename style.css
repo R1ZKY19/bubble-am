@@ -1,0 +1,428 @@
+/* ========================================================
+   BLOB ARENA — design tokens
+   Subject: single-cell organisms, membranes, mitosis.
+   Palette pulls from the game itself (cytoplasm teal,
+   nucleus pink) instead of a generic dark-mode default.
+   ======================================================== */
+:root{
+  --void:        #050a12;   /* deep background, like the space between cells */
+  --membrane:    #0d1b2e;   /* panel surface */
+  --membrane-2:  #122540;   /* raised panel / input surface */
+  --edge:        rgba(148, 197, 190, 0.16);
+
+  --cytoplasm:   #5eead4;   /* primary accent — growth, player */
+  --nucleus:     #f472b6;   /* secondary accent — rivals, danger */
+  --energy:      #facc15;   /* points / currency accent */
+
+  --ink:         #e8f4f0;
+  --ink-dim:     #85a0b8;
+  --ink-faint:   #4a5d75;
+
+  --danger:      #fb7185;
+  --ok:          #4ade80;
+
+  --radius-blob: 42% 58% 61% 39% / 45% 40% 60% 55%;
+  --shadow-glow: 0 0 40px rgba(94, 234, 212, 0.14);
+}
+
+*{ box-sizing: border-box; }
+
+html, body{
+  margin:0; padding:0;
+  background: var(--void);
+  color: var(--ink);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+body{
+  background-image:
+    radial-gradient(circle at 12% 20%, rgba(94,234,212,0.07), transparent 40%),
+    radial-gradient(circle at 88% 78%, rgba(244,114,182,0.07), transparent 40%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, .display{
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+
+.mono{ font-family: 'JetBrains Mono', ui-monospace, monospace; }
+
+a{ color: var(--cytoplasm); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+
+button{
+  font-family: inherit;
+  cursor: pointer;
+  border: none;
+}
+button:focus-visible,
+input:focus-visible,
+a:focus-visible{
+  outline: 2px solid var(--cytoplasm);
+  outline-offset: 2px;
+}
+
+::placeholder{ color: var(--ink-faint); }
+
+/* ---------- brand mark: two dividing cells ---------- */
+.brandmark{
+  width: 46px; height: 46px;
+  position: relative;
+  flex-shrink: 0;
+}
+.brandmark span{
+  position:absolute; top:50%; left:50%;
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+  animation: mitosis 3.2s ease-in-out infinite;
+}
+.brandmark span:first-child{ background: var(--cytoplasm); animation-delay: 0s; }
+.brandmark span:last-child{ background: var(--nucleus); animation-delay: -1.6s; opacity:0.85; }
+@keyframes mitosis{
+  0%, 100%{ transform: translate(-50%,-50%) translateX(0); }
+  50%{ transform: translate(-50%,-50%) translateX(9px); }
+}
+@media (prefers-reduced-motion: reduce){
+  .brandmark span{ animation: none; }
+  .brandmark span:first-child{ transform: translate(-60%,-50%); }
+  .brandmark span:last-child{ transform: translate(-40%,-50%); }
+}
+
+.brand-lockup{ display:flex; align-items:center; gap:12px; }
+.brand-lockup .name{ font-size: 20px; font-weight: 700; }
+.brand-lockup .name em{
+  font-style: normal;
+  color: var(--nucleus);
+}
+
+/* ---------- layout shell ---------- */
+.shell{
+  min-height: 100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding: 32px 20px;
+}
+
+/* ---------- organic panel (blob shape) ---------- */
+.blob-panel{
+  position: relative;
+  background: linear-gradient(155deg, var(--membrane), var(--membrane-2));
+  border: 1px solid var(--edge);
+  border-radius: 28px;
+  box-shadow: var(--shadow-glow), 0 20px 60px rgba(0,0,0,0.45);
+  padding: 40px;
+}
+.blob-panel::before{
+  content:'';
+  position:absolute;
+  width: 130px; height: 130px;
+  right: -40px; top: -40px;
+  border-radius: var(--radius-blob);
+  background: radial-gradient(circle, rgba(94,234,212,0.16), transparent 70%);
+  pointer-events:none;
+}
+
+/* ---------- auth card ---------- */
+.auth-wrap{
+  width: 100%;
+  max-width: 960px;
+  display:grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 28px;
+  align-items: stretch;
+}
+@media (max-width: 820px){
+  .auth-wrap{ grid-template-columns: 1fr; }
+}
+
+.hero-pane{
+  padding: 44px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  gap: 18px;
+}
+.hero-pane h1{
+  font-size: clamp(32px, 4vw, 44px);
+  line-height: 1.08;
+}
+.hero-pane h1 em{
+  font-style:normal;
+  background: linear-gradient(90deg, var(--cytoplasm), var(--nucleus));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hero-pane p{ color: var(--ink-dim); font-size:15px; line-height:1.6; max-width: 40ch; }
+
+.feature-row{ display:flex; gap:22px; margin-top: 8px; flex-wrap:wrap; }
+.feature-row .stat{ display:flex; flex-direction:column; gap:2px; }
+.feature-row .stat b{ font-family:'Space Grotesk',sans-serif; font-size:20px; color:var(--cytoplasm); }
+.feature-row .stat span{ font-size:12px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:0.08em; }
+
+.auth-card{
+  padding: 36px;
+  display:flex;
+  flex-direction:column;
+  gap: 18px;
+}
+
+.tabs{
+  display:flex;
+  background: rgba(0,0,0,0.25);
+  border-radius: 999px;
+  padding: 4px;
+  gap: 4px;
+}
+.tabs button{
+  flex:1;
+  background: transparent;
+  color: var(--ink-dim);
+  padding: 9px 0;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.2s, color 0.2s;
+}
+.tabs button.active{
+  background: var(--cytoplasm);
+  color: #062820;
+}
+
+.field{ display:flex; flex-direction:column; gap:6px; }
+.field label{ font-size:12px; color: var(--ink-dim); text-transform:uppercase; letter-spacing:0.08em; }
+.field input{
+  background: rgba(0,0,0,0.28);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  padding: 12px 14px;
+  color: var(--ink);
+  font-size: 14px;
+}
+.field input:focus{ border-color: var(--cytoplasm); }
+
+.form-panel{ display:none; flex-direction:column; gap:14px; }
+.form-panel.active{ display:flex; }
+
+.primary-btn{
+  background: var(--cytoplasm);
+  color: #062820;
+  font-weight: 700;
+  font-size: 15px;
+  padding: 13px 20px;
+  border-radius: 12px;
+  transition: filter 0.15s, transform 0.15s;
+}
+.primary-btn:hover{ filter: brightness(1.08); }
+.primary-btn:active{ transform: scale(0.98); }
+.primary-btn:disabled{ opacity:0.55; cursor:not-allowed; }
+
+.msg{
+  font-size: 13px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  display:none;
+}
+.msg.show{ display:block; }
+.msg.error{ background: rgba(251,113,133,0.12); color: var(--danger); border:1px solid rgba(251,113,133,0.3); }
+.msg.ok{ background: rgba(74,222,128,0.12); color: var(--ok); border:1px solid rgba(74,222,128,0.3); }
+
+.fine-print{ font-size: 12px; color: var(--ink-faint); text-align:center; }
+
+/* ---------- setup notice (Firebase not configured) ---------- */
+.setup-banner{
+  border: 1px dashed rgba(250,204,21,0.5);
+  background: rgba(250,204,21,0.08);
+  color: #fde68a;
+  border-radius: 12px;
+  padding: 14px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+.setup-banner code{
+  background: rgba(0,0,0,0.35);
+  padding: 1px 6px;
+  border-radius: 6px;
+  font-family:'JetBrains Mono', monospace;
+  font-size: 12px;
+}
+
+/* ---------- game chrome ---------- */
+#gameWrap{ position:relative; width:100vw; height:100vh; overflow:hidden; background: var(--void); }
+canvas{ display:block; cursor:crosshair; }
+
+.hud{
+  position:absolute; top:18px; left:18px;
+  display:flex; flex-direction:column; gap:10px;
+  z-index: 5;
+}
+.hud-card{
+  background: rgba(13,27,46,0.88);
+  border:1px solid var(--edge);
+  border-radius: 16px;
+  padding: 12px 18px;
+  backdrop-filter: blur(6px);
+  min-width: 190px;
+}
+.hud-card .label{ font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--ink-faint); }
+.hud-card .value{ font-family:'Space Grotesk',sans-serif; font-size:24px; font-weight:700; color:var(--cytoplasm); }
+.hud-card .value.energy{ color: var(--energy); }
+.hud-card .value.level{ color: var(--nucleus); }
+.hud-card.small{ padding: 8px 18px; min-width: unset; }
+.hud-card .value.cellcount{ font-size:16px; color: var(--ink-dim); }
+
+.top-right{
+  position:absolute; top:18px; right:18px;
+  display:flex; flex-direction:column; align-items:flex-end; gap:10px;
+  z-index:5;
+}
+.player-chip{
+  display:flex; align-items:center; gap:10px;
+  background: rgba(13,27,46,0.88);
+  border:1px solid var(--edge);
+  border-radius: 999px;
+  padding: 6px 16px 6px 6px;
+}
+.player-chip .avatar{
+  width:34px; height:34px; border-radius:50%;
+  background: var(--cytoplasm);
+  background-size: cover; background-position:center;
+  border: 2px solid var(--void);
+}
+.player-chip .name{ font-size:13px; font-weight:600; }
+.player-chip button{
+  background:none; color:var(--ink-faint); font-size:12px;
+  padding:4px 8px; border-radius:999px;
+}
+.player-chip button:hover{ color: var(--danger); }
+
+.leaderboard{
+  background: rgba(13,27,46,0.88);
+  border:1px solid var(--edge);
+  border-radius: 16px;
+  padding: 12px 16px;
+  min-width: 190px;
+  backdrop-filter: blur(6px);
+}
+.leaderboard h3{ font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--nucleus); margin-bottom:6px; }
+.leaderboard ol{ margin:0; padding-left:18px; font-size:13px; }
+.leaderboard li{ margin:3px 0; color: var(--ink-dim); }
+.leaderboard li.me{ color: var(--cytoplasm); font-weight:700; }
+
+.skin-btn{
+  background: var(--membrane-2);
+  border:1px solid var(--edge);
+  color: var(--ink);
+  font-size:12px;
+  padding: 8px 14px;
+  border-radius: 999px;
+  display:flex; align-items:center; gap:6px;
+}
+.skin-btn:hover{ border-color: var(--cytoplasm); }
+
+.hint{
+  position:absolute; bottom:16px; left:50%; transform:translateX(-50%);
+  display:flex; gap:10px; flex-wrap:wrap; justify-content:center;
+  z-index:5;
+}
+.hint span{
+  font-size:12px; color: var(--ink-dim); letter-spacing:0.02em;
+  background: rgba(13,27,46,0.78);
+  border: 1px solid var(--edge);
+  border-radius: 999px;
+  padding: 6px 12px;
+  backdrop-filter: blur(6px);
+}
+.hint span b{
+  color: var(--cytoplasm);
+  font-family:'JetBrains Mono', monospace;
+  font-weight:500;
+  margin-right: 2px;
+}
+
+.overlay{
+  position:absolute; inset:0;
+  display:flex; align-items:center; justify-content:center;
+  background: radial-gradient(circle at 50% 40%, rgba(94,234,212,0.08), rgba(5,10,18,0.97));
+  z-index: 10;
+  text-align:center;
+  padding: 20px;
+}
+.overlay.hidden{ display:none; }
+.overlay .panel{ max-width: 420px; width:100%; }
+.overlay h2{ font-size: 32px; margin-bottom: 8px; }
+.overlay p{ color: var(--ink-dim); margin: 6px 0 20px; }
+.overlay .earned{ color: var(--energy); font-weight:700; }
+
+.skin-upload-row{
+  display:flex; align-items:center; gap:12px;
+  background: rgba(0,0,0,0.25);
+  border:1px solid var(--edge);
+  border-radius: 14px;
+  padding: 12px;
+  margin: 14px 0;
+  text-align:left;
+}
+.skin-upload-row .preview{
+  width:48px; height:48px; border-radius:50%;
+  background: var(--cytoplasm);
+  background-size:cover; background-position:center;
+  flex-shrink:0;
+  border: 2px solid var(--membrane-2);
+}
+.skin-upload-row .info{ flex:1; font-size:12px; color:var(--ink-dim); }
+.file-label{
+  background: var(--membrane-2);
+  border:1px solid var(--edge);
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size:12px;
+  cursor:pointer;
+}
+.file-label:hover{ border-color: var(--cytoplasm); }
+input[type="file"]{ display:none; }
+
+.pause-note{ font-size:12px !important; margin: -8px 0 18px !important; }
+.pause-stats{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 20px;
+  text-align:left;
+}
+.pause-stat{
+  background: rgba(0,0,0,0.25);
+  border: 1px solid var(--edge);
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.pause-stat .label{ font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-faint); }
+.pause-stat .value{ font-family:'Space Grotesk',sans-serif; font-size:19px; font-weight:700; color:var(--cytoplasm); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.pause-stat .value.energy{ color: var(--energy); }
+
+.ghost-btn{
+  background: transparent;
+  border: 1px solid var(--edge);
+  color: var(--ink-dim);
+  font-weight: 600;
+  font-size: 13px;
+  padding: 11px 20px;
+  border-radius: 12px;
+  margin-top: 10px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.ghost-btn:hover{ border-color: var(--danger); color: var(--danger); }
+
+.loading-dots{ display:inline-flex; gap:4px; }
+.loading-dots span{
+  width:6px; height:6px; border-radius:50%; background: var(--cytoplasm);
+  animation: pulse 1s infinite ease-in-out;
+}
+.loading-dots span:nth-child(2){ animation-delay:0.15s; }
+.loading-dots span:nth-child(3){ animation-delay:0.3s; }
+@keyframes pulse{ 0%,100%{ opacity:0.3; } 50%{ opacity:1; } }
