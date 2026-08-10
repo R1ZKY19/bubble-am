@@ -1,127 +1,421 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Blob Arena</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Blob Arena</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<div id="gameWrap">
-  <canvas id="c"></canvas>
+    <div id="gameWrap">
+        <!-- ============================================================
+        CANVAS
+        ============================================================ -->
+        <canvas id="c"></canvas>
 
-  <div class="hud">
-    <div class="hud-card">
-      <div class="label">Massa</div>
-      <div class="value" id="massVal">0</div>
-    </div>
-    <div class="hud-card">
-      <div class="label">Level</div>
-      <div class="value level" id="levelVal">1</div>
-    </div>
-    <div class="hud-card">
-      <div class="label">Poin akun</div>
-      <div class="value energy" id="pointsVal">0</div>
-    </div>
-    <div class="hud-card small">
-      <div class="label">Sel</div>
-      <div class="value cellcount" id="cellsVal">1/12</div>
-    </div>
-  </div>
+        <!-- Left HUD removed — stats now available in Settings -->
 
-  <div class="top-right">
-    <div class="player-chip">
-      <div class="avatar" id="avatarChip"></div>
-      <div class="name" id="nameChip">Pemain</div>
-      <button id="logoutBtn" type="button">Keluar</button>
-    </div>
-    <button class="skin-btn" id="openSkinBtn" type="button">🖼️ Ganti skin foto</button>
-    <div class="leaderboard">
-      <h3>Papan peringkat</h3>
-      <ol id="lbList"></ol>
-    </div>
-  </div>
-
-  <div class="hint">
-    <span><b>Mouse</b> gerak</span>
-    <span><b>Spasi</b> pecah sel</span>
-    <span><b>W / E</b> beri makan</span>
-    <span><b>ESC</b> jeda</span>
-  </div>
-
-  <!-- Start / auth-checking overlay -->
-  <div class="overlay" id="startOverlay">
-    <div class="blob-panel panel">
-      <div class="brand-lockup" style="justify-content:center;margin-bottom:14px;">
-        <div class="brandmark"><span></span><span></span></div>
-        <div class="name">Blob <em>Arena</em></div>
-      </div>
-      <h2 id="startTitle">Memeriksa akun<span class="loading-dots"><span></span><span></span><span></span></span></h2>
-      <p id="startSub">Mohon tunggu sebentar.</p>
-      <p id="fileProtocolWarn" style="display:none; color:#fde68a; font-size:13px;">
-        ⚠️ Halaman ini dibuka lewat <code>file://</code> — browser memblokir script game.
-        Jalankan lewat server lokal atau lewat alamat GitHub Pages, bukan dengan
-        membuka file HTML secara langsung.
-      </p>
-
-      <div class="skin-upload-row" id="skinRow" style="display:none;">
-        <div class="preview" id="skinPreview"></div>
-        <div class="info">Skin fotomu akan tampil di dalam selmu saat bermain.</div>
-        <label class="file-label" for="skinFile">Unggah foto</label>
-        <input type="file" id="skinFile" accept="image/png, image/jpeg">
-      </div>
-
-      <button class="primary-btn" id="startBtn" style="display:none; width:100%;">Masuk ke arena</button>
-    </div>
-  </div>
-
-  <!-- Death / results overlay -->
-  <div class="overlay hidden" id="deathOverlay">
-    <div class="blob-panel panel">
-      <h2>Selmu dimakan!</h2>
-      <p>Massa akhir: <b id="finalMass">0</b><br>
-         Poin didapat match ini: <span class="earned" id="earnedPoints">+0</span></p>
-      <button class="primary-btn" id="retryBtn" style="width:100%;">Main lagi</button>
-    </div>
-  </div>
-
-  <!-- Pause overlay (ESC) -->
-  <div class="overlay hidden" id="pauseOverlay">
-    <div class="blob-panel panel">
-      <h2>Dijeda</h2>
-      <p class="pause-note">Tekan <b>ESC</b> lagi atau klik Lanjutkan untuk kembali.</p>
-      <div class="pause-stats">
-        <div class="pause-stat">
-          <div class="label">Nama</div>
-          <div class="value" id="pauseName">—</div>
+        <!-- ============================================================
+        EXPERIENCE BAR
+        ============================================================ -->
+        <div class="exp-shell">
+            <div class="exp-bar">
+                <div id="expFill"></div>
+            </div>
+            <div class="exp-text" id="expText">EXP 0 / 100</div>
         </div>
-        <div class="pause-stat">
-          <div class="label">Level</div>
-          <div class="value" id="pauseLevel">1</div>
-        </div>
-        <div class="pause-stat">
-          <div class="label">Poin akun</div>
-          <div class="value energy" id="pausePoints">0</div>
-        </div>
-        <div class="pause-stat">
-          <div class="label">Massa saat ini</div>
-          <div class="value" id="pauseMass">0</div>
-        </div>
-      </div>
-      <button class="primary-btn" id="resumeBtn" style="width:100%;">Lanjutkan</button>
-      <button class="ghost-btn" id="pauseQuitBtn" style="width:100%;">Keluar ke menu utama</button>
-    </div>
-  </div>
-</div>
 
-<script>
-  if (location.protocol === 'file:') {
-    document.getElementById('fileProtocolWarn').style.display = 'block';
-  }
-</script>
-<script src="js/firebase-config.js"></script>
-<script type="module" src="js/game.js"></script>
+        <!-- ============================================================
+        GAME CONTROLS HINT
+        ============================================================ -->
+        <div class="hint">
+            <span><b>Mouse</b> gerak</span>
+            <span><b>Scroll</b> zoom</span>
+            <span><b>Spasi</b> pecah sel</span>
+            <span><b>W / E</b> beri makan</span>
+            <span><b>ESC</b> jeda</span>
+        </div>
+
+        <!-- ============================================================
+        TOP RIGHT - Leaderboard (right side reserved for ranking only)
+        ============================================================ -->
+        <div class="top-right">
+            <!-- Leaderboard -->
+            <div class="leaderboard" id="leaderboardOnly">
+                <h3>Papan peringkat</h3>
+                <div class="live-indicator" id="leaderboardLive" style="font-size:12px;color:var(--ink-dim);margin-bottom:6px;">LIVE</div>
+                <ol id="lbList"></ol>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        START OVERLAY
+        ============================================================ -->
+        <div class="overlay" id="startOverlay">
+            <div class="blob-panel panel lobby-panel">
+                <div class="profile-grid">
+                    <!-- Profile Card -->
+                    <div class="profile-card">
+                        <div class="profile-header">
+                            <div>
+                                <div class="player-name" id="playerNameCard">Pemain</div>
+                                <div class="profile-title" id="startTitle">Siap bertarung?</div>
+                                <div class="subtle">Pemain premium • 999 LVL</div>
+                            </div>
+                        </div>
+
+                        <div class="profile-stats-row">
+                            <div class="stat-pill">
+                                <span>Level</span>
+                                <strong id="startLevelVal">1</strong>
+                            </div>
+                            <div class="stat-pill">
+                                <span>Poin</span>
+                                <strong id="startPointsVal">0</strong>
+                            </div>
+                            <div class="stat-pill">
+                                <span>Massa</span>
+                                <strong id="startMassVal">0</strong>
+                            </div>
+                        </div>
+
+                        <div class="profile-circle">
+                            <div class="profile-name-big" id="startNameDisplay">Pemain</div>
+                        </div>
+
+                        <div class="profile-meta">
+                            <span id="startSummary">Level 1 • 0 poin</span>
+                            <span id="startSub">Latar gelap, virus, dan duri hadir di arena.</span>
+                        </div>
+                    </div>
+
+                    <!-- Profile Sidebar -->
+                    <div class="profile-sidebar">
+                        <div class="small-panel">
+                            <div class="panel-title">Kontrol</div>
+                            <ul>
+                                <li>Mouse = Gerak</li>
+                                <li>Scroll = Zoom</li>
+                                <li>Space = Pecah</li>
+                                <li>W = Beri makan</li>
+                                <li>E = Eject semua sel</li>
+                            </ul>
+                        </div>
+
+                        <div class="small-panel">
+                            <div class="panel-title">Statistik</div>
+                            <ul>
+                                <li>Server: Asia (Singapore)</li>
+                                <li>Mode: FFA</li>
+                                <li>Massa Terbesar: <span id="startBestMass">0</span></li>
+                                <li>Waktu Main: <span id="gameTimeDisplay">0s</span></li>
+                            </ul>
+                        </div>
+
+                        <div class="small-panel actions-panel">
+                            <button class="primary-btn" id="startBtn" disabled>Main sekarang</button>
+                            <button class="ghost-btn" id="settingsBtn" type="button">Pengaturan</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Skin Upload -->
+                <div class="skin-upload-row" id="skinRow" style="display:none;">
+                    <div class="preview" id="skinPreview"></div>
+                    <div class="info">Skin fotomu akan tampil di dalam selmu saat bermain.</div>
+                    <label class="file-label" for="skinFile">Unggah foto</label>
+                    <input type="file" id="skinFile" accept="image/png, image/jpeg">
+                </div>
+
+                <!-- Settings Panel removed from main overlay; use separate modal -->
+
+                <!-- Inline Hints -->
+                <div class="hint-inline">
+                    <span>Mouse = Gerak</span>
+                    <span>Scroll = Zoom</span>
+                    <span>Space = Pecah</span>
+                    <span>W = beri makan</span>
+                    <span>E = Eject semua sel</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        DEATH OVERLAY
+        ============================================================ -->
+        <div class="overlay hidden" id="deathOverlay">
+            <div class="blob-panel panel gameover-panel">
+                <div class="panel-badge">GAME OVER</div>
+                <h2>Selmu dimakan!</h2>
+                <div class="value-stack">
+                    <div class="value-pill">
+                        <span>Massa</span>
+                        <b id="finalMass">0</b>
+                    </div>
+                    <div class="value-pill">
+                        <span>Skor</span>
+                        <b id="earnedPoints">+0</b>
+                    </div>
+                </div>
+                <div class="overlay-actions">
+                    <button class="primary-btn" id="retryBtn">Main lagi</button>
+                    <button class="ghost-btn" id="deathMenuBtn" type="button">Kembali ke menu</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        PAUSE OVERLAY
+        ============================================================ -->
+        <div class="overlay hidden" id="pauseOverlay">
+            <div class="blob-panel panel pause-panel">
+                <div class="panel-badge">PAUSE</div>
+                <h2>Game dijeda</h2>
+                <p class="pause-note">Tekan <b>ESC</b> lagi atau pilih tombol di bawah untuk melanjutkan.</p>
+
+                <div class="pause-stats">
+                    <div class="pause-stat">
+                        <div class="label">Nama</div>
+                        <div class="value" id="pauseName">—</div>
+                    </div>
+                    <div class="pause-stat">
+                        <div class="label">Level</div>
+                        <div class="value" id="pauseLevel">1</div>
+                    </div>
+                    <div class="pause-stat">
+                        <div class="label">Poin akun</div>
+                        <div class="value energy" id="pausePoints">0</div>
+                    </div>
+                    <div class="pause-stat">
+                        <div class="label">Massa saat ini</div>
+                        <div class="value" id="pauseMass">0</div>
+                    </div>
+                </div>
+
+                <div class="overlay-actions">
+                    <button class="ghost-btn" id="pauseSettingsBtn" type="button">⚙ Pengaturan</button>
+                    <button class="primary-btn" id="resumeBtn">Lanjutkan</button>
+                </div>
+
+                <!-- Pause Settings -->
+                <div class="settings-panel hidden" id="pauseSettingsPanel">
+                    <div class="setting-row">
+                        <label for="pauseGraphicsSelect">Grafik</label>
+                        <select id="pauseGraphicsSelect">
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="pauseSoundToggle">Sound</label>
+                        <input type="checkbox" id="pauseSoundToggle" checked>
+                    </div>
+                    <div class="setting-row">
+                        <label for="pauseMusicToggle">Music</label>
+                        <input type="checkbox" id="pauseMusicToggle" checked>
+                    </div>
+                    <div class="setting-row">
+                        <label for="pauseShowMassToggle">Tampilkan Massa</label>
+                        <input type="checkbox" id="pauseShowMassToggle" checked>
+                    </div>
+                    <div class="setting-row">
+                        <label for="pauseShowGridToggle">Tampilkan Grid</label>
+                        <input type="checkbox" id="pauseShowGridToggle" checked>
+                    </div>
+                    <div class="setting-row">
+                        <label for="pauseShowNamesToggle">Tampilkan Nama</label>
+                        <input type="checkbox" id="pauseShowNamesToggle" checked>
+                    </div>
+                    <div class="setting-row">
+                        <label for="pauseZoomRange">Zoom</label>
+                        <input type="range" id="pauseZoomRange" min="0.6" max="1.45" step="0.05" value="1">
+                    </div>
+                </div>
+
+                <button class="ghost-btn" id="pauseQuitBtn" style="width:100%;">Keluar ke menu utama</button>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        SHOP OVERLAY
+        ============================================================ -->
+        <div class="overlay hidden" id="shopOverlay">
+            <div class="blob-panel panel shop-panel">
+                <div class="panel-head">
+                    <h2>Shop skin & warna</h2>
+                    <button class="ghost-btn" id="closeShopBtn" type="button">Tutup</button>
+                </div>
+
+                <!-- settings overlay removed from here to be a top-level modal -->
+                <p class="shop-copy">Beli skin dengan poinmu. Warna bisa diubah langsung di sini.</p>
+                
+                <div class="shop-row">
+                    <label class="shop-label" for="colorPicker">Warna sel</label>
+                    <input type="color" id="colorPicker" value="#5eead4">
+                </div>
+                
+                <div class="shop-grid" id="shopList"></div>
+            </div>
+        </div>
+
+        <!-- Settings Overlay (separate modal) -->
+        <div class="overlay hidden" id="settingsOverlay">
+            <div class="blob-panel panel">
+                <div class="panel-head">
+                    <h2>Pengaturan</h2>
+                </div>
+
+                <!-- (chat moved to top-level) -->
+                <div class="settings-body">
+                    <!-- Moved player controls and quick actions here -->
+                    <div class="settings-section">
+                        <h3>Profil & Kontrol</h3>
+                        <div class="player-chip settings-player">
+                            <div class="avatar" id="avatarChip"></div>
+                            <div class="name" id="nameChip">Pemain</div>
+                            <button id="logoutBtn" type="button">Keluar</button>
+                        </div>
+                        <div class="field" style="margin-top:8px; display:flex; gap:8px; align-items:center;">
+                            <label for="chatNick" style="min-width:72px; color:var(--ink-dim);">Nickname</label>
+                            <input id="chatNick" type="text" placeholder="Nama tampilan" style="flex:1; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.06); background:rgba(0,0,0,0.2); color:var(--ink);">
+                        </div>
+                        <div class="quick-actions settings-quick">
+                            <button class="control-btn" id="themeBtn" type="button">🌙 Tema</button>
+                            <button class="control-btn" id="shopBtn" type="button">🛍️ Skin</button>
+                            <button class="control-btn" id="openSkinBtn" type="button">🖼️ Foto</button>
+                            <button class="control-btn" id="resetPassBtn" type="button">🔐 Reset</button>
+                        </div>
+                    </div>
+
+                    <!-- Stats moved from left HUD into settings -->
+                    <div class="settings-section">
+                        <h3>Status</h3>
+                        <div class="stat-row"><span>Massa</span><strong id="massVal">0</strong></div>
+                        <div class="stat-row"><span>Level</span><strong id="levelVal">1</strong></div>
+                        <div class="stat-row"><span>Rank</span><strong id="rankVal">#—</strong></div>
+                        <div class="stat-row"><span>EXP</span><strong id="expVal">0</strong></div>
+                        <div class="stat-row"><span>Poin</span><strong id="pointsVal">0</strong></div>
+                        <div class="stat-row"><span>Sel</span><strong id="cellsVal">1/12</strong></div>
+                    </div>
+                    <div class="setting-row">
+                        <label for="graphicsSelect">Grafik</label>
+                        <select id="graphicsSelect">
+                            <option value="high">High</option>
+                            <option value="medium">Medium</option>
+                            <option value="low">Low</option>
+                        </select>
+                    </div>
+                    <div class="setting-row">
+                        <label for="soundToggle">Sound</label>
+                        <input type="checkbox" id="soundToggle">
+                    </div>
+                    <div class="setting-row">
+                        <label for="musicToggle">Music</label>
+                        <input type="checkbox" id="musicToggle">
+                    </div>
+                    <div class="setting-row">
+                        <label for="showMassToggle">Tampilkan Massa</label>
+                        <input type="checkbox" id="showMassToggle">
+                    </div>
+                    <div class="setting-row">
+                        <label for="showGridToggle">Tampilkan Grid</label>
+                        <input type="checkbox" id="showGridToggle">
+                    </div>
+                    <div class="setting-row">
+                        <label for="showNamesToggle">Tampilkan Nama</label>
+                        <input type="checkbox" id="showNamesToggle">
+                    </div>
+                    <div class="setting-row">
+                        <label for="zoomRange">Zoom</label>
+                        <input type="range" id="zoomRange" min="0.6" max="1.45" step="0.05" value="1">
+                    </div>
+                </div>
+                <div class="overlay-actions">
+                    <button class="primary-btn" id="applySettingsBtn">Terapkan</button>
+                    <button class="ghost-btn" id="backSettingsBtn">Kembali</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ============================================================
+        LOGOUT MODAL
+        ============================================================ -->
+        <div class="overlay hidden" id="logoutModal">
+            <div class="blob-panel panel modal-card">
+                <div class="panel-badge">LOGOUT</div>
+                <h2>Keluar dari permainan?</h2>
+                <p class="pause-note">Apakah kamu yakin ingin keluar? Semua sesi akan ditutup dan kamu akan kembali ke menu utama.</p>
+                <div class="overlay-actions">
+                    <button class="ghost-btn" id="cancelLogoutBtn" type="button">Batal</button>
+                    <button class="primary-btn" id="confirmLogoutBtn" type="button">Keluar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Chat box (local, bottom-left) - top-level -->
+    <div class="chat-box" id="chatBox" style="display:none;">
+        <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
+        <div class="chat-input">
+            <input id="chatInput" type="text" placeholder="Ketik pesan...">
+            <button id="chatSend" class="primary-btn">Kirim</button>
+        </div>
+    </div>
+
+    <!-- Live warning / status area -->
+    <div class="live-warning" id="liveWarning" aria-live="polite" style="display:none;"></div>
+
+    <!-- ============================================================
+    SCRIPTS
+    ============================================================ -->
+    <!-- File Protocol Warning -->
+    <script>
+        if (location.protocol === 'file:') {
+            const warn = document.createElement('div');
+            warn.style.cssText = 'position:fixed;left:12px;top:12px;z-index:9999;background:rgba(255,20,20,0.9);color:#fff;padding:8px 12px;border-radius:8px;';
+            warn.textContent = '⚠️ Buka melalui server (localhost) untuk akses Firebase.';
+            document.body.appendChild(warn);
+        }
+    </script>
+
+    <!-- Firebase Config -->
+    <script src="js/firebase-config.js"></script>
+
+    <!-- Game Module -->
+    <script type="module">
+        (async () => {
+            try {
+                // Force fresh load to avoid cached script
+                await import(`./js/game.js?v=${Date.now()}`);
+            } catch (err) {
+                console.error('Failed to load game module:', err);
+                
+                // Show user-friendly error
+                const el = document.createElement('div');
+                el.style.cssText = `
+                    position: fixed;
+                    left: 12px;
+                    top: 12px;
+                    z-index: 9999;
+                    background: rgba(255, 20, 20, 0.9);
+                    color: #fff;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    font-family: sans-serif;
+                    font-size: 14px;
+                `;
+                el.textContent = '❌ Error loading game.js — lihat Console (F12)';
+                document.body.appendChild(el);
+            }
+        })();
+    </script>
 </body>
 </html>

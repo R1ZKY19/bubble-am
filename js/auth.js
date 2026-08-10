@@ -5,7 +5,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
 import {
   getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  updateProfile, onAuthStateChanged
+  updateProfile, onAuthStateChanged, sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
   getFirestore, doc, setDoc, getDoc, serverTimestamp
@@ -24,16 +24,15 @@ if (!configured) {
   const auth = getAuth(app);
   const db = getFirestore(app);
 
-  // If already logged in, skip straight to the game.
   onAuthStateChanged(auth, (user) => {
     if (user) window.location.href = 'game.html';
   });
 
-  // ---------- tab switching ----------
   const tabLogin = document.getElementById('tabLogin');
   const tabRegister = document.getElementById('tabRegister');
   const formLogin = document.getElementById('formLogin');
   const formRegister = document.getElementById('formRegister');
+  const resetPassLink = document.getElementById('resetPassLink');
 
   function showTab(which){
     const isLogin = which === 'login';
@@ -46,7 +45,6 @@ if (!configured) {
   tabLogin.addEventListener('click', () => showTab('login'));
   tabRegister.addEventListener('click', () => showTab('register'));
 
-  // ---------- message helper ----------
   const msgEl = document.getElementById('authMsg');
   function showMsg(text, type){
     msgEl.textContent = text;
@@ -67,7 +65,25 @@ if (!configured) {
     return 'Terjadi kesalahan: ' + (err.message || code);
   }
 
-  // ---------- register ----------
+  async function ensurePlayerDoc(uid, fallbackName){
+    const ref = doc(db, 'players', uid);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) {
+      await setDoc(ref, {
+        name: fallbackName || 'Pemain',
+        points: 0,
+        bestMass: 0,
+        skinData: null,
+        activeSkin: 'default',
+        ownedSkins: ['default'],
+        preferredColor: '#5eead4',
+        theme: 'dark',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+    }
+  }
+
   formRegister.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearMsg();
@@ -84,7 +100,12 @@ if (!configured) {
         points: 0,
         bestMass: 0,
         skinData: null,
-        createdAt: serverTimestamp()
+        activeSkin: 'default',
+        ownedSkins: ['default'],
+        preferredColor: '#5eead4',
+        theme: 'dark',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
       });
       showMsg('Akun dibuat! Mengalihkan ke arena…', 'ok');
       setTimeout(() => window.location.href = 'game.html', 600);
@@ -94,7 +115,6 @@ if (!configured) {
     }
   });
 
-  // ---------- login ----------
   formLogin.addEventListener('submit', async (e) => {
     e.preventDefault();
     clearMsg();
@@ -104,19 +124,26 @@ if (!configured) {
     btn.disabled = true; btn.textContent = 'Masuk…';
     try {
       const cred = await signInWithEmailAndPassword(auth, email, pass);
-      // make sure a player doc exists (in case it was created before this field existed)
-      const ref = doc(db, 'players', cred.user.uid);
-      const snap = await getDoc(ref);
-      if (!snap.exists()) {
-        await setDoc(ref, {
-          name: cred.user.displayName || 'Pemain',
-          points: 0, bestMass: 0, skinData: null, createdAt: serverTimestamp()
-        });
-      }
+      await ensurePlayerDoc(cred.user.uid, cred.user.displayName || 'Pemain');
       window.location.href = 'game.html';
     } catch (err) {
       showMsg(friendlyError(err), 'error');
       btn.disabled = false; btn.textContent = 'Masuk';
+    }
+  });
+
+  resetPassLink.addEventListener('click', async (e) => {
+    e.preventDefault();
+    const email = document.getElementById('loginEmail').value.trim();
+    if (!email) {
+      showMsg('Masukkan email akunmu dulu, lalu klik reset ulang.', 'error');
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showMsg('Email reset kata sandi sudah dikirim. Cek inbox Anda.', 'ok');
+    } catch (err) {
+      showMsg(friendlyError(err), 'error');
     }
   });
 }
