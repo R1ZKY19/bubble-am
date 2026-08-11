@@ -3,24 +3,34 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Blob Arena — Login & Main</title>
+<title>Blob Arena — Main</title>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<!-- ===== CANVAS (Game) ===== -->
+<!-- ===== CANVAS ===== -->
 <canvas id="gameCanvas"></canvas>
+
+<!-- ===== EXPERIENCE BAR ===== -->
+<div class="exp-shell">
+  <div class="exp-bar">
+    <div id="expFill"></div>
+  </div>
+  <div class="exp-text" id="expText">EXP 0 / 100</div>
+</div>
 
 <!-- ===== HUD ===== -->
 <div id="hud">
   <div class="name" id="playerName">Kamu</div>
   <div class="mass" id="playerMass">0</div>
   <div class="score" id="playerScore">⭐ 0</div>
+  <div class="level" id="playerLevel">Level 1</div>
 </div>
 
 <!-- ===== LEADERBOARD ===== -->
 <div id="leaderboard">
   <h3>🏆 Papan Peringkat</h3>
+  <div class="live-indicator">LIVE</div>
   <ol id="lbList">
     <li><span class="lb-name">—</span><span class="lb-mass">0</span></li>
     <li><span class="lb-name">—</span><span class="lb-mass">0</span></li>
@@ -40,7 +50,7 @@
 </div>
 
 <!-- ================================================================ -->
-<!-- ===== LOGIN OVERLAY (di dalam game) ===== -->
+<!-- ===== LOGIN OVERLAY ===== -->
 <!-- ================================================================ -->
 <div class="overlay" id="loginOverlay">
   <div class="panel auth-card">
@@ -48,20 +58,17 @@
     <h2>Masuk untuk bermain</h2>
     <p class="sub">Login atau daftar untuk menyimpan progresmu</p>
 
-    <!-- Banner Firebase -->
     <div id="setupBanner" class="setup-banner" style="display:none;background:rgba(255,70,70,0.15);color:#ff6b6b;padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:13px;text-align:left;">
       ⚠️ <b>Firebase belum dikonfigurasi.</b> Buka <code>js/firebase-config.js</code>
     </div>
 
     <div id="authMsg" class="msg" style="display:none;"></div>
 
-    <!-- Tabs -->
     <div class="tabs">
       <button id="tabLogin" class="active" type="button">Masuk</button>
       <button id="tabRegister" type="button">Daftar</button>
     </div>
 
-    <!-- Form Login -->
     <form id="formLogin" class="form-panel active">
       <div class="field">
         <label for="loginEmail">Email</label>
@@ -75,7 +82,6 @@
       <p class="fine-print">Belum punya akun? Klik tab "Daftar" di atas.</p>
     </form>
 
-    <!-- Form Register -->
     <form id="formRegister" class="form-panel">
       <div class="field">
         <label for="regName">Nama panggilan</label>
@@ -90,30 +96,80 @@
         <input id="regPass" type="password" required minlength="6" placeholder="Minimal 6 karakter">
       </div>
       <button id="regBtn" class="btn btn-primary" type="submit" style="width:100%;">Daftar & Main</button>
-      <p class="fine-print">Poin dan skin tersimpan ke akun ini.</p>
+      <p class="fine-print">Poin, level, dan skin tersimpan ke akun ini.</p>
     </form>
   </div>
 </div>
 
+<!-- ================================================================ -->
 <!-- ===== START OVERLAY (setelah login) ===== -->
+<!-- ================================================================ -->
 <div class="overlay hidden" id="startOverlay">
-  <div class="panel">
+  <div class="panel" style="max-width:520px;">
     <div class="badge">★ BLOB ARENA</div>
-    <div class="avatar-circle" id="avatarPreview">🍄</div>
-    <h2>Halo, <span id="welcomeName">Pemain</span>!</h2>
-    <p class="sub">Siap masuk ke arena?</p>
+    
+    <!-- Profile -->
+    <div class="profile-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left;margin:12px 0;">
+      <div>
+        <div style="font-size:13px;color:#666;">Nama</div>
+        <div style="font-size:20px;font-weight:700;color:#fff;" id="welcomeName">Pemain</div>
+        <div style="font-size:13px;color:#7ee8fa;" id="welcomeTitle">Siap bertarung?</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:13px;color:#666;">Level</div>
+        <div style="font-size:24px;font-weight:700;color:#7ee8fa;" id="userLevel">1</div>
+        <div style="font-size:13px;color:#666;">Poin: <span id="userPoints">0</span></div>
+      </div>
+    </div>
+
+    <!-- Avatar / Skin Preview -->
+    <div class="avatar-circle" id="avatarPreview" style="width:80px;height:80px;border-radius:50%;margin:0 auto 12px;background:#7ee8fa;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#0a0a0a;box-shadow:0 0 40px rgba(126,232,250,0.2);">
+      🍄
+    </div>
+
     <div class="btn-group">
       <button class="btn btn-primary" id="startBtn">Mainkan</button>
+      <button class="btn btn-secondary" id="shopBtn">🛍️ Shop</button>
       <button class="btn btn-secondary" id="logoutBtn">Keluar</button>
     </div>
-    <div style="margin-top:12px;font-size:12px;color:#555;">
-      <span>Level: <b id="userLevel">1</b></span>
-      <span style="margin-left:16px;">Poin: <b id="userPoints">0</b></span>
+
+    <!-- Stats -->
+    <div style="display:flex;justify-content:center;gap:24px;margin-top:12px;font-size:12px;color:#666;">
+      <span>Massa terbesar: <b id="bestMass" style="color:#fff;">0</b></span>
+      <span>Main: <b id="gamesPlayed" style="color:#fff;">0</b>x</span>
     </div>
   </div>
 </div>
 
+<!-- ================================================================ -->
+<!-- ===== SHOP OVERLAY ===== -->
+<!-- ================================================================ -->
+<div class="overlay hidden" id="shopOverlay">
+  <div class="panel" style="max-width:500px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+      <h2 style="font-size:24px;margin:0;">🛍️ Shop Skin</h2>
+      <button class="btn btn-secondary" id="closeShopBtn" style="padding:6px 16px;font-size:13px;">Tutup</button>
+    </div>
+    <p class="sub" style="font-size:13px;">Beli skin dengan poinmu. Warna bisa diubah langsung di sini.</p>
+    
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
+      <label style="color:#aaa;font-size:13px;">Warna sel</label>
+      <input type="color" id="colorPicker" value="#7ee8fa" style="width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;background:transparent;">
+    </div>
+
+    <div class="shop-grid" id="shopList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-height:300px;overflow-y:auto;">
+      <!-- Shop items will be rendered by JS -->
+    </div>
+
+    <div style="margin-top:12px;text-align:center;font-size:13px;color:#666;">
+      Poinmu: <b id="shopPoints" style="color:#7ee8fa;">0</b>
+    </div>
+  </div>
+</div>
+
+<!-- ================================================================ -->
 <!-- ===== DEATH OVERLAY ===== -->
+<!-- ================================================================ -->
 <div class="overlay hidden" id="deathOverlay">
   <div class="panel">
     <div class="emoji-big">💀</div>
@@ -122,7 +178,7 @@
     <p class="sub" id="deathMessage">Coba lagi.</p>
     <div class="value-row">
       <div class="item"><div class="label">Massa</div><div class="number" id="deathMass">0</div></div>
-      <div class="item"><div class="label">Poin</div><div class="number" id="deathPoints">+0</div></div>
+      <div class="item"><div class="label">EXP Didapat</div><div class="number" id="deathExp">+0</div></div>
     </div>
     <div class="btn-group">
       <button class="btn btn-primary" id="retryBtn">Main Lagi</button>
@@ -131,7 +187,9 @@
   </div>
 </div>
 
+<!-- ================================================================ -->
 <!-- ===== PAUSE OVERLAY ===== -->
+<!-- ================================================================ -->
 <div class="overlay hidden" id="pauseOverlay">
   <div class="panel">
     <div class="badge">⏸ PAUSE</div>
@@ -140,7 +198,7 @@
     <div class="pause-stats">
       <div class="stat"><span class="label">Nama</span><span class="value" id="pauseName">—</span></div>
       <div class="stat"><span class="label">Massa</span><span class="value" id="pauseMass">0</span></div>
-      <div class="stat"><span class="label">Poin</span><span class="value" id="pausePoints">0</span></div>
+      <div class="stat"><span class="label">EXP</span><span class="value" id="pauseExp">0</span></div>
       <div class="stat"><span class="label">Rank</span><span class="value" id="pauseRank">#—</span></div>
     </div>
     <div class="settings-grid">
@@ -155,11 +213,18 @@
   </div>
 </div>
 
-<!-- ===== SCRIPT ===== -->
+<!-- ================================================================ -->
+<!-- ===== SKIN UPLOAD (tersembunyi) ===== -->
+<!-- ================================================================ -->
+<input type="file" id="skinFile" accept="image/*" style="display:none;">
+
+<!-- ================================================================ -->
+<!-- ===== SCRIPTS ===== -->
+<!-- ================================================================ -->
 <script src="js/firebase-config.js"></script>
 <script type="module">
 // ================================================================
-//  GAME + AUTH (Gabungan dalam satu file game.html)
+//  BLOB ARENA — FULL VERSION (Login + Game + Level + Skin + Shop)
 // ================================================================
 
 // ---------- Firebase Import ----------
@@ -170,7 +235,6 @@ import {
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-  sendPasswordResetEmail
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 import {
   getFirestore,
@@ -178,23 +242,32 @@ import {
   setDoc,
   getDoc,
   updateDoc,
-  increment
+  increment,
+  arrayUnion,
+  arrayRemove
 } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import {
+  getStorage,
+  ref,
+  uploadBytes,
+  getDownloadURL
+} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
 // ---------- Firebase Init ----------
-let app, auth, db;
+let app, auth, db, storage;
 try {
   const firebaseConfig = window.firebaseConfig;
   app = initializeApp(firebaseConfig);
   auth = getAuth(app);
   db = getFirestore(app);
+  storage = getStorage(app);
   console.log('🔥 Firebase connected');
 } catch (e) {
   console.error('Firebase error:', e);
   document.getElementById('setupBanner').style.display = 'block';
 }
 
-// ---------- DOM refs ----------
+// ---------- DOM Refs ----------
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
@@ -202,6 +275,9 @@ const ctx = canvas.getContext('2d');
 const playerNameEl = document.getElementById('playerName');
 const playerMassEl = document.getElementById('playerMass');
 const playerScoreEl = document.getElementById('playerScore');
+const playerLevelEl = document.getElementById('playerLevel');
+const expFill = document.getElementById('expFill');
+const expText = document.getElementById('expText');
 const lbList = document.getElementById('lbList');
 
 // Login
@@ -209,6 +285,7 @@ const loginOverlay = document.getElementById('loginOverlay');
 const startOverlay = document.getElementById('startOverlay');
 const deathOverlay = document.getElementById('deathOverlay');
 const pauseOverlay = document.getElementById('pauseOverlay');
+const shopOverlay = document.getElementById('shopOverlay');
 
 const tabLogin = document.getElementById('tabLogin');
 const tabRegister = document.getElementById('tabRegister');
@@ -225,15 +302,25 @@ const authMsg = document.getElementById('authMsg');
 
 // Start
 const welcomeName = document.getElementById('welcomeName');
+const welcomeTitle = document.getElementById('welcomeTitle');
 const userLevel = document.getElementById('userLevel');
 const userPoints = document.getElementById('userPoints');
-const nameInput = document.getElementById('nameInput');
+const bestMass = document.getElementById('bestMass');
+const gamesPlayed = document.getElementById('gamesPlayed');
 const startBtn = document.getElementById('startBtn');
 const logoutBtn = document.getElementById('logoutBtn');
+const shopBtn = document.getElementById('shopBtn');
+const avatarPreview = document.getElementById('avatarPreview');
+
+// Shop
+const closeShopBtn = document.getElementById('closeShopBtn');
+const shopList = document.getElementById('shopList');
+const shopPoints = document.getElementById('shopPoints');
+const colorPicker = document.getElementById('colorPicker');
 
 // Death
 const deathMass = document.getElementById('deathMass');
-const deathPoints = document.getElementById('deathPoints');
+const deathExp = document.getElementById('deathExp');
 const deathMessage = document.getElementById('deathMessage');
 const retryBtn = document.getElementById('retryBtn');
 const deathMenuBtn = document.getElementById('deathMenuBtn');
@@ -241,7 +328,7 @@ const deathMenuBtn = document.getElementById('deathMenuBtn');
 // Pause
 const pauseName = document.getElementById('pauseName');
 const pauseMass = document.getElementById('pauseMass');
-const pausePoints = document.getElementById('pausePoints');
+const pauseExp = document.getElementById('pauseExp');
 const pauseRank = document.getElementById('pauseRank');
 const resumeBtn = document.getElementById('resumeBtn');
 const pauseQuitBtn = document.getElementById('pauseQuitBtn');
@@ -249,9 +336,25 @@ const pauseZoom = document.getElementById('pauseZoom');
 const pauseGrid = document.getElementById('pauseGrid');
 const pauseNames = document.getElementById('pauseNames');
 
+// Skin upload
+const skinFile = document.getElementById('skinFile');
+
 // ---------- State ----------
 let currentUser = null;
 let userData = null;
+let skinImage = null;
+let selectedColor = '#7ee8fa';
+const SHOP_SKINS = [
+  { id: 'neon', name: 'Neon', price: 50, color: '#ff6b6b' },
+  { id: 'ocean', name: 'Ocean', price: 50, color: '#4dabf7' },
+  { id: 'forest', name: 'Forest', price: 50, color: '#69db7c' },
+  { id: 'sunset', name: 'Sunset', price: 100, color: '#ffa94d' },
+  { id: 'galaxy', name: 'Galaxy', price: 100, color: '#9775fa' },
+  { id: 'royal', name: 'Royal', price: 150, color: '#f06595' },
+  { id: 'gold', name: 'Gold', price: 200, color: '#fcc419' },
+  { id: 'crystal', name: 'Crystal', price: 250, color: '#20c997' },
+  { id: 'lava', name: 'Lava', price: 300, color: '#ff922b' },
+];
 
 // ---------- Sizing ----------
 function resizeCanvas() {
@@ -267,36 +370,66 @@ const state = {
   paused: false,
   name: 'Pemain',
   score: 0,
+  exp: 0,
+  level: 1,
   zoom: 1.0,
   showGrid: true,
   showNames: true,
-  player: { x: 0, y: 0, radius: 20, mass: 20, color: '#7ee8fa', name: 'Pemain', cells: [{ x: 0, y: 0, radius: 20 }] },
+  player: {
+    x: 0, y: 0, radius: 20, mass: 20,
+    color: '#7ee8fa',
+    name: 'Pemain',
+    cells: [{ x: 0, y: 0, radius: 20 }]
+  },
   foods: [],
   viruses: [],
   bots: [],
   mouse: { x: 0, y: 0 },
   camera: { x: 0, y: 0 },
   leaderboard: [],
-  gameScore: 0,
+  gameExp: 0,
+  totalEarnedExp: 0,
 };
 
 // ---------- Colors ----------
-const colors = ['#ff6b6b', '#ffa94d', '#fcc419', '#69db7c', '#4dabf7', '#9775fa', '#f06595', '#20c997'];
-function randomColor() { return colors[Math.floor(Math.random() * colors.length)]; }
+const botColors = ['#ff6b6b','#ffa94d','#fcc419','#69db7c','#4dabf7','#9775fa','#f06595','#20c997','#748ffc','#ff922b'];
+function randomColor() { return botColors[Math.floor(Math.random() * botColors.length)]; }
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function rand(min, max) { return Math.random() * (max - min) + min; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 
+// ---------- EXP System ----------
+function expForLevel(level) {
+  return Math.floor(100 * Math.pow(1.5, level - 1));
+}
+
+function getLevel(exp) {
+  let level = 1;
+  let needed = expForLevel(level);
+  while (exp >= needed) {
+    exp -= needed;
+    level++;
+    needed = expForLevel(level);
+  }
+  return { level, exp, needed };
+}
+
 // ---------- Spawn ----------
 function spawnFood() {
   const margin = 100, w = canvas.width * 2 + margin * 2, h = canvas.height * 2 + margin * 2;
-  return { x: rand(-w/2, w/2), y: rand(-h/2, h/2), radius: 4 + rand(0, 3), 
-    color: ['#ffd43b','#ff6b6b','#69db7c','#4dabf7','#da77f2'][Math.floor(Math.random()*5)] };
+  return {
+    x: rand(-w/2, w/2), y: rand(-h/2, h/2),
+    radius: 4 + rand(0, 3),
+    color: ['#ffd43b','#ff6b6b','#69db7c','#4dabf7','#da77f2'][Math.floor(Math.random()*5)]
+  };
 }
 
 function spawnVirus() {
   const margin = 200, w = canvas.width * 2 + margin * 2, h = canvas.height * 2 + margin * 2;
-  return { x: rand(-w/2, w/2), y: rand(-h/2, h/2), radius: 30 + rand(0, 15), color: '#20c997', spikes: 8 + Math.floor(rand(0,4)) };
+  return {
+    x: rand(-w/2, w/2), y: rand(-h/2, h/2),
+    radius: 30 + rand(0, 15), color: '#20c997', spikes: 8 + Math.floor(rand(0,4))
+  };
 }
 
 function spawnBot() {
@@ -304,9 +437,12 @@ function spawnBot() {
   const names = ['Bot🧠','AI_Pro','Makanan','SelKecil','Giant','Noob','Sweaty','Chill'];
   const mass = 15 + rand(0, 30);
   return {
-    x: rand(-w/2, w/2), y: rand(-h/2, h/2), radius: Math.sqrt(mass * 100) / 2,
-    mass, color: randomColor(), name: names[Math.floor(Math.random() * names.length)],
-    targetX: rand(-w/2, w/2), targetY: rand(-h/2, h/2), speed: 0.6 + rand(0, 0.6),
+    x: rand(-w/2, w/2), y: rand(-h/2, h/2),
+    radius: Math.sqrt(mass * 100) / 2,
+    mass, color: randomColor(),
+    name: names[Math.floor(Math.random() * names.length)],
+    targetX: rand(-w/2, w/2), targetY: rand(-h/2, h/2),
+    speed: 0.6 + rand(0, 0.6),
     cells: [{ x: 0, y: 0, radius: Math.sqrt(mass * 100) / 2 }]
   };
 }
@@ -319,10 +455,12 @@ function initWorld() {
 
 function resetPlayer(name) {
   const p = state.player;
-  p.x = 0; p.y = 0; p.mass = 20; p.radius = 20; p.name = name || 'Pemain';
-  p.color = randomColor(); p.cells = [{ x: 0, y: 0, radius: 20 }];
-  state.score = 0;
-  state.gameScore = 0;
+  p.x = 0; p.y = 0; p.mass = 20; p.radius = 20;
+  p.name = name || 'Pemain';
+  p.color = userData?.skinColor || selectedColor || '#7ee8fa';
+  p.cells = [{ x: 0, y: 0, radius: 20 }];
+  state.gameExp = 0;
+  state.totalEarnedExp = 0;
 }
 
 // ---------- Game Loop ----------
@@ -335,12 +473,13 @@ function startGame() {
   initWorld();
   state.running = true;
   state.paused = false;
-  state.score = 0;
-  state.gameScore = 0;
+  state.gameExp = 0;
+  state.totalEarnedExp = 0;
   state.leaderboard = [];
   startOverlay.classList.add('hidden');
   deathOverlay.classList.add('hidden');
   pauseOverlay.classList.add('hidden');
+  shopOverlay.classList.add('hidden');
   updateHUD();
   if (gameLoopId) cancelAnimationFrame(gameLoopId);
   lastTime = performance.now();
@@ -373,9 +512,11 @@ function update(dt) {
   for (let i = state.foods.length - 1; i >= 0; i--) {
     const food = state.foods[i];
     if (dist(p, food) < p.radius) {
-      p.mass += food.radius * 0.3;
+      const gain = food.radius * 0.3;
+      p.mass += gain;
       p.radius = Math.sqrt(p.mass * 100) / 2;
-      state.gameScore += Math.floor(food.radius * 0.5);
+      state.totalEarnedExp += Math.floor(food.radius * 0.3);
+      state.gameExp += Math.floor(food.radius * 0.3);
       state.foods.splice(i, 1);
       state.foods.push(spawnFood());
     }
@@ -389,7 +530,8 @@ function update(dt) {
         const newMass = p.mass * 0.4;
         p.mass -= newMass;
         p.radius = Math.sqrt(p.mass * 100) / 2;
-        state.gameScore += Math.floor(newMass * 0.2);
+        state.totalEarnedExp += Math.floor(newMass * 0.1);
+        state.gameExp += Math.floor(newMass * 0.1);
       }
       state.viruses.splice(i, 1);
       state.viruses.push(spawnVirus());
@@ -402,7 +544,8 @@ function update(dt) {
     if (dist(p, bot) < p.radius - bot.radius * 0.6 && p.radius > bot.radius * 1.1) {
       p.mass += bot.mass * 0.5;
       p.radius = Math.sqrt(p.mass * 100) / 2;
-      state.gameScore += Math.floor(bot.mass * 0.2);
+      state.totalEarnedExp += Math.floor(bot.mass * 0.2);
+      state.gameExp += Math.floor(bot.mass * 0.2);
       state.bots.splice(i, 1);
       state.bots.push(spawnBot());
     } else if (dist(p, bot) < bot.radius - p.radius * 0.6 && bot.radius > p.radius * 1.1) {
@@ -517,15 +660,36 @@ function render() {
 
 function drawCell(x, y, radius, color, name, mass, isPlayer = false) {
   const r = radius * state.zoom;
-  const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
-  grad.addColorStop(0, color);
-  grad.addColorStop(0.7, color);
-  grad.addColorStop(1, 'rgba(0,0,0,0.3)');
-  ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
-  ctx.fillStyle = grad; ctx.fill();
-  ctx.strokeStyle = 'rgba(255,255,255,0.2)'; ctx.lineWidth = 2; ctx.stroke();
-  ctx.beginPath(); ctx.arc(x - r * 0.15, y - r * 0.15, r * 0.4, 0, Math.PI * 2);
-  ctx.fillStyle = 'rgba(255,255,255,0.15)'; ctx.fill();
+  
+  // Draw skin image if available
+  if (isPlayer && skinImage) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.clip();
+    ctx.drawImage(skinImage, x - r, y - r, r * 2, r * 2);
+    ctx.restore();
+    // Overlay color tint
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = color + '40';
+    ctx.fill();
+  } else {
+    const grad = ctx.createRadialGradient(x, y, 0, x, y, r);
+    grad.addColorStop(0, color);
+    grad.addColorStop(0.7, color);
+    grad.addColorStop(1, 'rgba(0,0,0,0.3)');
+    ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fillStyle = grad; ctx.fill();
+  }
+
+  ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x - r * 0.15, y - r * 0.15, r * 0.4, 0, Math.PI * 2);
+  ctx.fillStyle = 'rgba(255,255,255,0.15)';
+  ctx.fill();
 
   if (state.showNames) {
     ctx.fillStyle = '#fff';
@@ -558,10 +722,20 @@ function updateLeaderboard() {
   }
 }
 
+// ---------- HUD ----------
 function updateHUD() {
-  playerNameEl.textContent = state.player.name;
-  playerMassEl.textContent = `⚪ ${Math.floor(state.player.mass)}`;
-  playerScoreEl.textContent = `⭐ ${state.gameScore}`;
+  const p = state.player;
+  playerNameEl.textContent = p.name;
+  playerMassEl.textContent = `⚪ ${Math.floor(p.mass)}`;
+  playerScoreEl.textContent = `⭐ ${state.totalEarnedExp}`;
+  
+  // Level & EXP
+  const levelInfo = getLevel(state.totalEarnedExp);
+  state.level = levelInfo.level;
+  playerLevelEl.textContent = `Level ${levelInfo.level}`;
+  const pct = (levelInfo.exp / levelInfo.needed) * 100;
+  expFill.style.width = Math.min(pct, 100) + '%';
+  expText.textContent = `EXP ${Math.floor(levelInfo.exp)} / ${levelInfo.needed}`;
 }
 
 // ---------- Game Over ----------
@@ -569,24 +743,30 @@ async function gameOver(message) {
   state.running = false;
   if (gameLoopId) cancelAnimationFrame(gameLoopId);
   
-  // Save score to Firebase
+  // Calculate EXP earned
+  const earnedExp = state.gameExp;
+  
+  // Save to Firebase
   if (currentUser && db) {
     try {
       const userRef = doc(db, 'users', currentUser.uid);
       await updateDoc(userRef, {
-        totalPoints: increment(state.gameScore),
-        gamesPlayed: increment(1)
+        totalExp: increment(earnedExp),
+        gamesPlayed: increment(1),
+        bestMass: Math.max(userData?.bestMass || 0, Math.floor(state.player.mass))
       });
-      // Update local
-      userData.totalPoints = (userData.totalPoints || 0) + state.gameScore;
-      userData.gamesPlayed = (userData.gamesPlayed || 0) + 1;
+      if (userData) {
+        userData.totalExp = (userData.totalExp || 0) + earnedExp;
+        userData.gamesPlayed = (userData.gamesPlayed || 0) + 1;
+        userData.bestMass = Math.max(userData.bestMass || 0, Math.floor(state.player.mass));
+      }
     } catch (e) {
-      console.error('Save score error:', e);
+      console.error('Save error:', e);
     }
   }
 
   deathMass.textContent = Math.floor(state.player.mass);
-  deathPoints.textContent = `+${state.gameScore}`;
+  deathExp.textContent = `+${earnedExp}`;
   deathMessage.textContent = message || 'Selmu dimakan!';
   deathOverlay.classList.remove('hidden');
 }
@@ -598,7 +778,7 @@ function togglePause() {
   if (state.paused) {
     pauseName.textContent = state.player.name;
     pauseMass.textContent = Math.floor(state.player.mass);
-    pausePoints.textContent = state.gameScore;
+    pauseExp.textContent = state.totalEarnedExp;
     const rank = state.leaderboard.findIndex(e => e.isMe) + 1;
     pauseRank.textContent = rank > 0 ? `#${rank}` : '—';
     pauseZoom.value = state.zoom;
@@ -610,6 +790,72 @@ function togglePause() {
   }
 }
 
+// ---------- Shop ----------
+function renderShop() {
+  shopList.innerHTML = '';
+  shopPoints.textContent = userData?.totalExp || 0;
+  
+  const owned = userData?.ownedSkins || [];
+  const activeSkin = userData?.activeSkin || 'default';
+  
+  for (const skin of SHOP_SKINS) {
+    const div = document.createElement('div');
+    const isOwned = owned.includes(skin.id);
+    const isActive = activeSkin === skin.id;
+    
+    div.style.cssText = `
+      background: ${isActive ? 'rgba(126,232,250,0.2)' : 'rgba(255,255,255,0.04)'};
+      border: 2px solid ${isActive ? '#7ee8fa' : 'rgba(255,255,255,0.06)'};
+      border-radius: 12px;
+      padding: 12px;
+      text-align: center;
+      cursor: ${isOwned ? 'pointer' : 'default'};
+      transition: all 0.2s;
+    `;
+    
+    div.innerHTML = `
+      <div style="width:40px;height:40px;border-radius:50%;background:${skin.color};margin:0 auto 6px;box-shadow:0 0 20px ${skin.color}40;"></div>
+      <div style="font-size:13px;font-weight:600;color:#fff;">${skin.name}</div>
+      <div style="font-size:11px;color:#666;">${isOwned ? (isActive ? '✓ Aktif' : 'Milik') : skin.price + ' poin'}</div>
+    `;
+    
+    if (isOwned) {
+      div.addEventListener('click', async () => {
+        if (currentUser && db) {
+          await updateDoc(doc(db, 'users', currentUser.uid), {
+            activeSkin: skin.id
+          });
+          userData.activeSkin = skin.id;
+          state.player.color = skin.color;
+          selectedColor = skin.color;
+          renderShop();
+          updateHUD();
+        }
+      });
+    } else {
+      div.addEventListener('click', async () => {
+        const price = skin.price;
+        if ((userData?.totalExp || 0) < price) {
+          alert('Poin tidak cukup!');
+          return;
+        }
+        if (confirm(`Beli ${skin.name} seharga ${price} poin?`)) {
+          if (currentUser && db) {
+            await updateDoc(doc(db, 'users', currentUser.uid), {
+              totalExp: increment(-price),
+              ownedSkins: arrayUnion(skin.id)
+            });
+            userData.totalExp = (userData.totalExp || 0) - price;
+            userData.ownedSkins = [...(userData.ownedSkins || []), skin.id];
+            renderShop();
+          }
+        }
+      });
+    }
+    shopList.appendChild(div);
+  }
+}
+
 // ---------- Auth Functions ----------
 function showAuthMsg(msg, isError = true) {
   authMsg.textContent = msg;
@@ -618,21 +864,19 @@ function showAuthMsg(msg, isError = true) {
   setTimeout(() => { authMsg.style.display = 'none'; }, 5000);
 }
 
-// Login
 async function handleLogin(e) {
   e.preventDefault();
   if (!auth) { showAuthMsg('Firebase belum dikonfigurasi!'); return; }
   const email = loginEmail.value.trim();
   const pass = loginPass.value;
   try {
-    const cred = await signInWithEmailAndPassword(auth, email, pass);
+    await signInWithEmailAndPassword(auth, email, pass);
     showAuthMsg('Login berhasil!', false);
   } catch (err) {
     showAuthMsg('Gagal login: ' + err.message);
   }
 }
 
-// Register
 async function handleRegister(e) {
   e.preventDefault();
   if (!auth) { showAuthMsg('Firebase belum dikonfigurasi!'); return; }
@@ -642,13 +886,16 @@ async function handleRegister(e) {
   if (!name) { showAuthMsg('Nama harus diisi!'); return; }
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
-    // Save user profile
     await setDoc(doc(db, 'users', cred.user.uid), {
       displayName: name,
       email: email,
-      totalPoints: 0,
+      totalExp: 0,
       gamesPlayed: 0,
+      bestMass: 0,
       level: 1,
+      ownedSkins: ['default'],
+      activeSkin: 'default',
+      skinColor: '#7ee8fa',
       createdAt: new Date().toISOString()
     });
     showAuthMsg('Daftar berhasil!', false);
@@ -657,62 +904,80 @@ async function handleRegister(e) {
   }
 }
 
-// Logout
 async function handleLogout() {
-  if (auth) {
-    await signOut(auth);
-  }
+  if (auth) await signOut(auth);
   currentUser = null;
   userData = null;
+  skinImage = null;
   state.running = false;
   if (gameLoopId) cancelAnimationFrame(gameLoopId);
   startOverlay.classList.add('hidden');
   deathOverlay.classList.add('hidden');
   pauseOverlay.classList.add('hidden');
+  shopOverlay.classList.add('hidden');
   loginOverlay.classList.remove('hidden');
 }
 
-// ---------- Auth State Listener ----------
+// ---------- Auth State ----------
 if (auth) {
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       currentUser = user;
-      // Get user data
       try {
         const docRef = doc(db, 'users', user.uid);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           userData = docSnap.data();
           welcomeName.textContent = userData.displayName || user.displayName || 'Pemain';
+          welcomeTitle.textContent = 'Siap bertarung!';
           userLevel.textContent = userData.level || 1;
-          userPoints.textContent = userData.totalPoints || 0;
+          userPoints.textContent = userData.totalExp || 0;
+          bestMass.textContent = userData.bestMass || 0;
+          gamesPlayed.textContent = userData.gamesPlayed || 0;
+          selectedColor = userData.skinColor || '#7ee8fa';
+          if (userData.activeSkin) {
+            const skin = SHOP_SKINS.find(s => s.id === userData.activeSkin);
+            if (skin) selectedColor = skin.color;
+          }
+          // Load skin image
+          if (userData.skinUrl) {
+            try {
+              const img = new Image();
+              img.src = userData.skinUrl;
+              img.onload = () => { skinImage = img; avatarPreview.innerHTML = ''; avatarPreview.style.backgroundImage = `url(${userData.skinUrl})`; avatarPreview.style.backgroundSize = 'cover'; };
+            } catch(e) {}
+          }
         } else {
-          // Create new user doc
           await setDoc(docRef, {
             displayName: user.displayName || 'Pemain',
             email: user.email,
-            totalPoints: 0,
+            totalExp: 0,
             gamesPlayed: 0,
+            bestMass: 0,
             level: 1,
+            ownedSkins: ['default'],
+            activeSkin: 'default',
+            skinColor: '#7ee8fa',
             createdAt: new Date().toISOString()
           });
-          userData = { displayName: user.displayName || 'Pemain', totalPoints: 0, gamesPlayed: 0, level: 1 };
+          userData = { displayName: user.displayName || 'Pemain', totalExp: 0, gamesPlayed: 0, bestMass: 0, level: 1, ownedSkins: ['default'], activeSkin: 'default', skinColor: '#7ee8fa' };
           welcomeName.textContent = userData.displayName;
         }
       } catch (e) {
         console.error('Get user data error:', e);
-        userData = { displayName: user.displayName || 'Pemain', totalPoints: 0, gamesPlayed: 0, level: 1 };
+        userData = { displayName: user.displayName || 'Pemain', totalExp: 0, gamesPlayed: 0, bestMass: 0, level: 1 };
       }
-      // Show start overlay
       loginOverlay.classList.add('hidden');
       startOverlay.classList.remove('hidden');
     } else {
       currentUser = null;
       userData = null;
+      skinImage = null;
       loginOverlay.classList.remove('hidden');
       startOverlay.classList.add('hidden');
       deathOverlay.classList.add('hidden');
       pauseOverlay.classList.add('hidden');
+      shopOverlay.classList.add('hidden');
     }
   });
 }
@@ -742,7 +1007,57 @@ regBtn.form.addEventListener('submit', handleRegister);
 startBtn.addEventListener('click', startGame);
 logoutBtn.addEventListener('click', handleLogout);
 
-// Retry
+// Shop
+shopBtn.addEventListener('click', () => {
+  renderShop();
+  shopOverlay.classList.remove('hidden');
+});
+closeShopBtn.addEventListener('click', () => {
+  shopOverlay.classList.add('hidden');
+});
+
+// Color picker
+colorPicker.addEventListener('input', async (e) => {
+  selectedColor = e.target.value;
+  state.player.color = selectedColor;
+  if (currentUser && db) {
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      skinColor: selectedColor
+    });
+    userData.skinColor = selectedColor;
+  }
+});
+
+// Skin upload
+avatarPreview.addEventListener('click', () => {
+  skinFile.click();
+});
+skinFile.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  try {
+    const storageRef = ref(storage, `skins/${currentUser.uid}/${Date.now()}_${file.name}`);
+    await uploadBytes(storageRef, file);
+    const url = await getDownloadURL(storageRef);
+    const img = new Image();
+    img.onload = () => {
+      skinImage = img;
+      avatarPreview.innerHTML = '';
+      avatarPreview.style.backgroundImage = `url(${url})`;
+      avatarPreview.style.backgroundSize = 'cover';
+    };
+    img.src = url;
+    await updateDoc(doc(db, 'users', currentUser.uid), {
+      skinUrl: url
+    });
+    userData.skinUrl = url;
+  } catch (err) {
+    console.error('Upload error:', err);
+    alert('Gagal upload skin: ' + err.message);
+  }
+});
+
+// Death
 retryBtn.addEventListener('click', () => {
   deathOverlay.classList.add('hidden');
   startGame();
@@ -766,7 +1081,7 @@ pauseZoom.addEventListener('input', () => { state.zoom = parseFloat(pauseZoom.va
 pauseGrid.addEventListener('change', () => { state.showGrid = pauseGrid.checked; });
 pauseNames.addEventListener('change', () => { state.showNames = pauseNames.checked; });
 
-// Canvas events
+// Canvas
 canvas.addEventListener('mousemove', (e) => {
   const rect = canvas.getBoundingClientRect();
   state.mouse.x = e.clientX - rect.left + state.camera.x;
@@ -788,7 +1103,8 @@ document.addEventListener('keydown', (e) => {
         const newMass = p.mass * 0.45;
         p.mass -= newMass;
         p.radius = Math.sqrt(p.mass * 100) / 2;
-        state.gameScore += Math.floor(newMass * 0.1);
+        state.totalEarnedExp += Math.floor(newMass * 0.1);
+        state.gameExp += Math.floor(newMass * 0.1);
       }
     }
   }
@@ -814,19 +1130,19 @@ loginOverlay.classList.remove('hidden');
 startOverlay.classList.add('hidden');
 deathOverlay.classList.add('hidden');
 pauseOverlay.classList.add('hidden');
+shopOverlay.classList.add('hidden');
 
 initWorld();
 resetPlayer('Pemain');
 updateLeaderboard();
 updateHUD();
 
-// Idle render
 function idleRender() {
   if (!state.running) { render(); requestAnimationFrame(idleRender); }
 }
 idleRender();
 
-console.log('🍄 Blob Arena with Login loaded!');
+console.log('🍄 Blob Arena FULL VERSION loaded!');
 </script>
 </body>
 </html>
