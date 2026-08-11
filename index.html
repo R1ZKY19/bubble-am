@@ -5,10 +5,27 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Blob Arena — masuk atau daftar</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<div class="arena-bg" aria-hidden="true">
+  <div class="blob blob-a"><span>YOU</span></div>
+  <div class="blob blob-b"><span>zeta</span></div>
+  <div class="blob blob-c"><span>nova</span></div>
+  <div class="blob blob-d"><span>pip</span></div>
+  <div class="blob blob-e"><span>rex</span></div>
+  <div class="blob blob-f"><span>kai</span></div>
+  <div class="pellet p1"></div>
+  <div class="pellet p2"></div>
+  <div class="pellet p3"></div>
+  <div class="pellet p4"></div>
+  <div class="pellet p5"></div>
+  <div class="pellet p6"></div>
+  <div class="pellet p7"></div>
+  <div class="pellet p8"></div>
+</div>
+
 <div class="shell">
   <div class="auth-wrap">
 
@@ -19,6 +36,18 @@
       </div>
       <h1>Tumbuh, telan, <em>bertahan</em>.</h1>
       <p>Kendalikan selmu di antara ribuan pemain lain, kumpulkan poin dari setiap pertandingan, lalu pakai foto pribadimu sebagai skin sel. Nama mu jadi permanen saat daftar dan levelmu terlihat sejak awal.</p>
+
+      <div class="mini-board">
+        <div class="mini-board-head">
+          <span class="dot"></span> Papan skor — live
+        </div>
+        <ol class="mini-board-list">
+          <li><b>1</b> nova <em>2 480</em></li>
+          <li><b>2</b> zeta <em>1 995</em></li>
+          <li><b>3</b> rex <em>1 340</em></li>
+        </ol>
+      </div>
+
       <div class="feature-row">
         <div class="stat"><b>Level</b><span>Naik dari EXP</span></div>
         <div class="stat"><b>Poin</b><span>Dari tiap match</span></div>
