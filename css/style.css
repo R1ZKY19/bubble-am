@@ -158,4 +158,66 @@
   cursor: pointer;
   transition: all 0.2s ease;
 }
-.panel .btn-primary { background: #7ee8fa;
+.panel .btn-primary { background: #7ee8fa; color: #0a0a0a; }
+.panel .btn-primary:hover { background: #a8f0ff; transform: scale(1.02); }
+.panel .btn-secondary { background: rgba(255,255,255,0.08); color: #ccc; border: 1px solid rgba(255,255,255,0.1); }
+.panel .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+.panel .btn-group { display: flex; gap: 12px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+.panel .value-row { display: flex; justify-content: center; gap: 32px; margin: 20px 0; }
+.panel .value-row .item { text-align: center; }
+.panel .value-row .item .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+.panel .value-row .item .number { font-size: 32px; font-weight: 700; color: #7ee8fa; }
+.panel .emoji-big { font-size: 48px; margin-bottom: 8px; }
+.panel .pause-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 24px;
+  margin: 16px 0;
+  text-align: left;
+}
+.panel .pause-stats .stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.panel .pause-stats .stat .label { color: #666; font-size: 13px; }
+.panel .pause-stats .stat .value { color: #fff; font-weight: 600; }
+.settings-grid { margin: 16px 0; text-align: left; }
+.settings-grid .setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.settings-grid .setting label { color: #aaa; font-size: 13px; }
+.settings-grid .setting input[type="range"] {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  width: 120px;
+}
+.settings-grid .setting input[type="checkbox"] {
+  accent-color: #7ee8fa;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .panel { padding: 28px 20px; }
+  #controls-hint { gap: 10px; font-size: 10px; padding: 6px 14px; flex-wrap: wrap; justify-content: center; bottom: 10px; }
+  #leaderboard { min-width: 130px; padding: 10px 14px; top: 10px; right: 10px; }
+  #leaderboard ol li { font-size: 11px; }
+  #hud { top: 10px; left: 10px; }
+  #hud .name { font-size: 18px; }
+  #hud .mass { font-size: 15px; }
+  .panel .value-row .item .number { font-size: 24px; }
+  .settings-grid .setting input[type="range"] { width: 80px; }
+}
