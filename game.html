@@ -4,7 +4,384 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Blob Arena — Main</title>
-<link rel="stylesheet" href="css/style.css">
+<style>
+/* ===== RESET ===== */
+* { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+body {
+  background: #0a0a0a;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  overflow: hidden;
+  height: 100vh;
+  width: 100vw;
+}
+
+/* ===== CANVAS ===== */
+#gameCanvas {
+  display: block;
+  background: #0a0a0a;
+  cursor: none;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* ===== EXPERIENCE BAR ===== */
+.exp-shell {
+  position: fixed;
+  bottom: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  width: 300px;
+  background: rgba(0,0,0,0.6);
+  border-radius: 20px;
+  padding: 4px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+.exp-bar {
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 20px;
+  overflow: hidden;
+}
+#expFill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #7ee8fa, #4dabf7);
+  border-radius: 20px;
+  transition: width 0.3s;
+}
+.exp-text {
+  text-align: center;
+  color: #888;
+  font-size: 11px;
+  padding: 4px 0 2px;
+  letter-spacing: 0.5px;
+}
+
+/* ===== HUD ===== */
+#hud {
+  position: fixed;
+  top: 16px;
+  left: 16px;
+  z-index: 10;
+  color: #fff;
+  font-size: 14px;
+  pointer-events: none;
+  text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  line-height: 1.6;
+}
+#hud .name { font-size: 22px; font-weight: 700; letter-spacing: 0.5px; }
+#hud .mass { font-size: 18px; font-weight: 600; color: #7ee8fa; }
+#hud .score { font-size: 14px; color: #aaa; }
+#hud .level { font-size: 13px; color: #7ee8fa; font-weight: 600; }
+
+/* ===== LEADERBOARD ===== */
+#leaderboard {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 10;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  padding: 14px 20px;
+  min-width: 180px;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+  pointer-events: none;
+}
+#leaderboard h3 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #888;
+  margin-bottom: 4px;
+  text-align: center;
+  font-weight: 600;
+}
+#leaderboard .live-indicator {
+  font-size: 10px;
+  color: #69db7c;
+  text-align: center;
+  margin-bottom: 6px;
+  letter-spacing: 1px;
+}
+#leaderboard ol { list-style: none; padding: 0; margin: 0; }
+#leaderboard ol li {
+  display: flex;
+  justify-content: space-between;
+  padding: 3px 0;
+  font-size: 13px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+#leaderboard ol li:last-child { border-bottom: none; }
+#leaderboard ol li .lb-name { color: #ddd; max-width: 100px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#leaderboard ol li .lb-mass { color: #7ee8fa; font-weight: 600; }
+#leaderboard ol li.me { background: rgba(126, 232, 250, 0.15); border-radius: 4px; padding: 3px 6px; margin: 0 -6px; }
+#leaderboard ol li.me .lb-name { color: #7ee8fa; font-weight: 600; }
+
+/* ===== CONTROLS HINT ===== */
+#controls-hint {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  gap: 20px;
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(6px);
+  padding: 8px 20px;
+  border-radius: 30px;
+  border: 1px solid rgba(255,255,255,0.05);
+  color: #888;
+  font-size: 12px;
+  pointer-events: none;
+}
+#controls-hint span { display: flex; align-items: center; gap: 4px; }
+#controls-hint b { color: #ccc; font-weight: 600; }
+
+/* ===== OVERLAYS ===== */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  background: rgba(0,0,0,0.75);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s ease;
+}
+.overlay.hidden { opacity: 0; pointer-events: none; }
+
+.panel {
+  background: rgba(20,20,25,0.95);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 36px 40px;
+  max-width: 480px;
+  width: 92%;
+  text-align: center;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.8);
+  max-height: 90vh;
+  overflow-y: auto;
+}
+.panel h2 { font-size: 26px; font-weight: 700; margin-bottom: 6px; letter-spacing: -0.5px; }
+.panel .sub { color: #888; font-size: 14px; margin-bottom: 20px; }
+.panel .badge {
+  display: inline-block;
+  background: rgba(126, 232, 250, 0.15);
+  color: #7ee8fa;
+  padding: 4px 16px;
+  border-radius: 30px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 1.5px;
+  font-weight: 600;
+  margin-bottom: 12px;
+}
+.panel .btn {
+  display: inline-block;
+  padding: 12px 32px;
+  border-radius: 30px;
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.panel .btn-primary { background: #7ee8fa; color: #0a0a0a; }
+.panel .btn-primary:hover { background: #a8f0ff; transform: scale(1.02); }
+.panel .btn-secondary { background: rgba(255,255,255,0.08); color: #ccc; border: 1px solid rgba(255,255,255,0.08); }
+.panel .btn-secondary:hover { background: rgba(255,255,255,0.15); }
+.panel .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 14px; flex-wrap: wrap; }
+.panel .value-row { display: flex; justify-content: center; gap: 32px; margin: 16px 0; }
+.panel .value-row .item { text-align: center; }
+.panel .value-row .item .label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+.panel .value-row .item .number { font-size: 30px; font-weight: 700; color: #7ee8fa; }
+.panel .emoji-big { font-size: 48px; margin-bottom: 6px; }
+
+/* ===== AUTH CARD ===== */
+.auth-card .tabs {
+  display: flex;
+  gap: 0;
+  margin-bottom: 18px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 4px;
+}
+.auth-card .tabs button {
+  flex: 1;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.auth-card .tabs button.active { background: #7ee8fa; color: #0a0a0a; }
+.auth-card .tabs button:hover:not(.active) { color: #fff; }
+.auth-card .msg {
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  display: none;
+}
+.auth-card .msg.error { display: block; background: rgba(255,70,70,0.15); color: #ff6b6b; border: 1px solid rgba(255,70,70,0.2); }
+.auth-card .msg.success { display: block; background: rgba(70,255,70,0.1); color: #69db7c; border: 1px solid rgba(70,255,70,0.15); }
+.auth-card .field { margin-bottom: 14px; text-align: left; }
+.auth-card .field label { display: block; color: #aaa; font-size: 13px; font-weight: 500; margin-bottom: 4px; }
+.auth-card .field input {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 14px;
+  outline: none;
+  transition: border 0.2s;
+}
+.auth-card .field input:focus { border-color: #7ee8fa; }
+.auth-card .field input::placeholder { color: #555; }
+.auth-card .fine-print { color: #666; font-size: 12px; text-align: center; margin-top: 10px; }
+.auth-card .fine-print a { color: #7ee8fa; text-decoration: none; }
+.auth-card .setup-banner {
+  background: rgba(255,70,70,0.15);
+  color: #ff6b6b;
+  padding: 10px 14px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  font-size: 12px;
+  text-align: left;
+  display: none;
+}
+.form-panel { display: none; }
+.form-panel.active { display: block; }
+
+/* ===== PROFILE ===== */
+.profile-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; text-align: left; margin: 8px 0; }
+.profile-grid .label { font-size: 12px; color: #666; }
+.profile-grid .value { font-size: 18px; font-weight: 700; color: #fff; }
+.profile-grid .value.gold { color: #fcc419; }
+
+.avatar-circle {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  margin: 0 auto 12px;
+  background: #7ee8fa;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 32px;
+  font-weight: 700;
+  color: #0a0a0a;
+  box-shadow: 0 0 40px rgba(126,232,250,0.2);
+  cursor: pointer;
+  background-size: cover;
+  background-position: center;
+  border: 2px solid rgba(255,255,255,0.1);
+  transition: all 0.3s;
+}
+.avatar-circle:hover { border-color: #7ee8fa; transform: scale(1.05); }
+
+/* ===== PAUSE ===== */
+.pause-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px 20px;
+  margin: 12px 0;
+  text-align: left;
+}
+.pause-stats .stat {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.pause-stats .stat .label { color: #666; font-size: 13px; }
+.pause-stats .stat .value { color: #fff; font-weight: 600; }
+
+.settings-grid { margin: 12px 0; text-align: left; }
+.settings-grid .setting {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.settings-grid .setting label { color: #aaa; font-size: 13px; }
+.settings-grid .setting input[type="range"] {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 6px;
+  padding: 4px 8px;
+  color: #fff;
+  font-size: 13px;
+  outline: none;
+  width: 120px;
+}
+.settings-grid .setting input[type="checkbox"] {
+  accent-color: #7ee8fa;
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+/* ===== SHOP ===== */
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px;
+}
+.shop-grid .shop-item {
+  background: rgba(255,255,255,0.04);
+  border: 2px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 10px 8px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.shop-grid .shop-item:hover { background: rgba(255,255,255,0.08); }
+.shop-grid .shop-item.active { border-color: #7ee8fa; background: rgba(126,232,250,0.15); }
+.shop-grid .shop-item .swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  margin: 0 auto 4px;
+  border: 2px solid rgba(255,255,255,0.1);
+}
+.shop-grid .shop-item .sname { font-size: 12px; font-weight: 600; color: #fff; }
+.shop-grid .shop-item .sprice { font-size: 10px; color: #666; }
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 640px) {
+  .panel { padding: 24px 18px; }
+  #controls-hint { gap: 8px; font-size: 9px; padding: 5px 12px; flex-wrap: wrap; justify-content: center; bottom: 10px; }
+  #leaderboard { min-width: 120px; padding: 8px 12px; top: 10px; right: 10px; }
+  #leaderboard ol li { font-size: 11px; }
+  #hud { top: 10px; left: 10px; }
+  #hud .name { font-size: 17px; }
+  #hud .mass { font-size: 14px; }
+  .exp-shell { width: 200px; bottom: 55px; }
+  .shop-grid { grid-template-columns: repeat(2, 1fr); }
+  .profile-grid { grid-template-columns: 1fr; text-align: center; }
+  .panel .value-row .item .number { font-size: 22px; }
+}
+</style>
 </head>
 <body>
 
@@ -30,7 +407,7 @@
 <!-- ===== LEADERBOARD ===== -->
 <div id="leaderboard">
   <h3>🏆 Papan Peringkat</h3>
-  <div class="live-indicator">LIVE</div>
+  <div class="live-indicator">● LIVE</div>
   <ol id="lbList">
     <li><span class="lb-name">—</span><span class="lb-mass">0</span></li>
     <li><span class="lb-name">—</span><span class="lb-mass">0</span></li>
@@ -58,11 +435,11 @@
     <h2>Masuk untuk bermain</h2>
     <p class="sub">Login atau daftar untuk menyimpan progresmu</p>
 
-    <div id="setupBanner" class="setup-banner" style="display:none;background:rgba(255,70,70,0.15);color:#ff6b6b;padding:10px 14px;border-radius:10px;margin-bottom:16px;font-size:13px;text-align:left;">
+    <div id="setupBanner" class="setup-banner">
       ⚠️ <b>Firebase belum dikonfigurasi.</b> Buka <code>js/firebase-config.js</code>
     </div>
 
-    <div id="authMsg" class="msg" style="display:none;"></div>
+    <div id="authMsg" class="msg"></div>
 
     <div class="tabs">
       <button id="tabLogin" class="active" type="button">Masuk</button>
@@ -102,30 +479,26 @@
 </div>
 
 <!-- ================================================================ -->
-<!-- ===== START OVERLAY (setelah login) ===== -->
+<!-- ===== START OVERLAY ===== -->
 <!-- ================================================================ -->
 <div class="overlay hidden" id="startOverlay">
   <div class="panel" style="max-width:520px;">
     <div class="badge">★ BLOB ARENA</div>
     
-    <!-- Profile -->
-    <div class="profile-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;text-align:left;margin:12px 0;">
+    <div class="profile-grid">
       <div>
-        <div style="font-size:13px;color:#666;">Nama</div>
-        <div style="font-size:20px;font-weight:700;color:#fff;" id="welcomeName">Pemain</div>
+        <div class="label">Nama</div>
+        <div class="value" id="welcomeName">Pemain</div>
         <div style="font-size:13px;color:#7ee8fa;" id="welcomeTitle">Siap bertarung?</div>
       </div>
       <div style="text-align:right;">
-        <div style="font-size:13px;color:#666;">Level</div>
-        <div style="font-size:24px;font-weight:700;color:#7ee8fa;" id="userLevel">1</div>
-        <div style="font-size:13px;color:#666;">Poin: <span id="userPoints">0</span></div>
+        <div class="label">Level</div>
+        <div class="value gold" id="userLevel">1</div>
+        <div class="label" style="margin-top:4px;">Poin: <span id="userPoints" style="color:#fff;">0</span></div>
       </div>
     </div>
 
-    <!-- Avatar / Skin Preview -->
-    <div class="avatar-circle" id="avatarPreview" style="width:80px;height:80px;border-radius:50%;margin:0 auto 12px;background:#7ee8fa;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:700;color:#0a0a0a;box-shadow:0 0 40px rgba(126,232,250,0.2);">
-      🍄
-    </div>
+    <div class="avatar-circle" id="avatarPreview">🍄</div>
 
     <div class="btn-group">
       <button class="btn btn-primary" id="startBtn">Mainkan</button>
@@ -133,10 +506,12 @@
       <button class="btn btn-secondary" id="logoutBtn">Keluar</button>
     </div>
 
-    <!-- Stats -->
-    <div style="display:flex;justify-content:center;gap:24px;margin-top:12px;font-size:12px;color:#666;">
+    <div style="display:flex;justify-content:center;gap:20px;margin-top:10px;font-size:12px;color:#666;">
       <span>Massa terbesar: <b id="bestMass" style="color:#fff;">0</b></span>
       <span>Main: <b id="gamesPlayed" style="color:#fff;">0</b>x</span>
+    </div>
+    <div style="margin-top:6px;font-size:11px;color:#555;">
+      Klik avatar untuk upload skin foto
     </div>
   </div>
 </div>
@@ -146,20 +521,18 @@
 <!-- ================================================================ -->
 <div class="overlay hidden" id="shopOverlay">
   <div class="panel" style="max-width:500px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-      <h2 style="font-size:24px;margin:0;">🛍️ Shop Skin</h2>
-      <button class="btn btn-secondary" id="closeShopBtn" style="padding:6px 16px;font-size:13px;">Tutup</button>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <h2 style="font-size:22px;margin:0;">🛍️ Shop Skin</h2>
+      <button class="btn btn-secondary" id="closeShopBtn" style="padding:6px 16px;font-size:12px;">Tutup</button>
     </div>
-    <p class="sub" style="font-size:13px;">Beli skin dengan poinmu. Warna bisa diubah langsung di sini.</p>
+    <p class="sub" style="font-size:12px;">Beli skin dengan poin. Klik skin untuk memakai.</p>
     
-    <div style="display:flex;gap:12px;align-items:center;margin-bottom:16px;">
+    <div style="display:flex;gap:12px;align-items:center;margin-bottom:12px;">
       <label style="color:#aaa;font-size:13px;">Warna sel</label>
-      <input type="color" id="colorPicker" value="#7ee8fa" style="width:40px;height:40px;border:none;border-radius:8px;cursor:pointer;background:transparent;">
+      <input type="color" id="colorPicker" value="#7ee8fa" style="width:36px;height:36px;border:none;border-radius:8px;cursor:pointer;background:transparent;">
     </div>
 
-    <div class="shop-grid" id="shopList" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-height:300px;overflow-y:auto;">
-      <!-- Shop items will be rendered by JS -->
-    </div>
+    <div class="shop-grid" id="shopList"></div>
 
     <div style="margin-top:12px;text-align:center;font-size:13px;color:#666;">
       Poinmu: <b id="shopPoints" style="color:#7ee8fa;">0</b>
@@ -213,29 +586,51 @@
   </div>
 </div>
 
-<!-- ================================================================ -->
-<!-- ===== SKIN UPLOAD (tersembunyi) ===== -->
-<!-- ================================================================ -->
+<!-- ===== SKIN UPLOAD (hidden) ===== -->
 <input type="file" id="skinFile" accept="image/*" style="display:none;">
 
 <!-- ================================================================ -->
 <!-- ===== SCRIPTS ===== -->
 <!-- ================================================================ -->
-<script src="js/firebase-config.js"></script>
+<script>
+// Firebase Config (dari firebase-config.js)
+window.FIREBASE_CONFIG = {
+  apiKey: "AIzaSyC5N9Mk6Wx50Pyioitxj1Br2VaIJCNM4hY",
+  authDomain: "blob-arena-14cc4.firebaseapp.com",
+  projectId: "blob-arena-14cc4",
+  storageBucket: "blob-arena-14cc4.firebasestorage.app",
+  messagingSenderId: "1020274004717",
+  appId: "1:1020274004717:web:92deaaa456a7199e4932e4"
+};
+window.FIREBASE_CONFIGURED = true;
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+    "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+    "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+    "firebase/storage": "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js"
+  }
+}
+</script>
+
 <script type="module">
 // ================================================================
-//  BLOB ARENA — FULL VERSION (Login + Game + Level + Skin + Shop)
+//  BLOB ARENA — FULL VERSION
 // ================================================================
 
-// ---------- Firebase Import ----------
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+// ---------- Firebase ----------
+import { initializeApp } from "firebase/app";
 import { 
   getAuth, 
   signInWithEmailAndPassword, 
   createUserWithEmailAndPassword,
   onAuthStateChanged,
   signOut,
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+  updateProfile
+} from "firebase/auth";
 import {
   getFirestore,
   doc,
@@ -245,33 +640,23 @@ import {
   increment,
   arrayUnion,
   arrayRemove
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+} from "firebase/firestore";
 import {
   getStorage,
   ref,
   uploadBytes,
   getDownloadURL
-} from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+} from "firebase/storage";
 
-// ---------- Firebase Init ----------
-let app, auth, db, storage;
-try {
-  const firebaseConfig = window.firebaseConfig;
-  app = initializeApp(firebaseConfig);
-  auth = getAuth(app);
-  db = getFirestore(app);
-  storage = getStorage(app);
-  console.log('🔥 Firebase connected');
-} catch (e) {
-  console.error('Firebase error:', e);
-  document.getElementById('setupBanner').style.display = 'block';
-}
+const app = initializeApp(window.FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
 
 // ---------- DOM Refs ----------
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 
-// HUD
 const playerNameEl = document.getElementById('playerName');
 const playerMassEl = document.getElementById('playerMass');
 const playerScoreEl = document.getElementById('playerScore');
@@ -280,7 +665,6 @@ const expFill = document.getElementById('expFill');
 const expText = document.getElementById('expText');
 const lbList = document.getElementById('lbList');
 
-// Login
 const loginOverlay = document.getElementById('loginOverlay');
 const startOverlay = document.getElementById('startOverlay');
 const deathOverlay = document.getElementById('deathOverlay');
@@ -299,8 +683,8 @@ const regEmail = document.getElementById('regEmail');
 const regPass = document.getElementById('regPass');
 const regBtn = document.getElementById('regBtn');
 const authMsg = document.getElementById('authMsg');
+const setupBanner = document.getElementById('setupBanner');
 
-// Start
 const welcomeName = document.getElementById('welcomeName');
 const welcomeTitle = document.getElementById('welcomeTitle');
 const userLevel = document.getElementById('userLevel');
@@ -312,20 +696,17 @@ const logoutBtn = document.getElementById('logoutBtn');
 const shopBtn = document.getElementById('shopBtn');
 const avatarPreview = document.getElementById('avatarPreview');
 
-// Shop
 const closeShopBtn = document.getElementById('closeShopBtn');
 const shopList = document.getElementById('shopList');
 const shopPoints = document.getElementById('shopPoints');
 const colorPicker = document.getElementById('colorPicker');
 
-// Death
 const deathMass = document.getElementById('deathMass');
 const deathExp = document.getElementById('deathExp');
 const deathMessage = document.getElementById('deathMessage');
 const retryBtn = document.getElementById('retryBtn');
 const deathMenuBtn = document.getElementById('deathMenuBtn');
 
-// Pause
 const pauseName = document.getElementById('pauseName');
 const pauseMass = document.getElementById('pauseMass');
 const pauseExp = document.getElementById('pauseExp');
@@ -336,7 +717,6 @@ const pauseZoom = document.getElementById('pauseZoom');
 const pauseGrid = document.getElementById('pauseGrid');
 const pauseNames = document.getElementById('pauseNames');
 
-// Skin upload
 const skinFile = document.getElementById('skinFile');
 
 // ---------- State ----------
@@ -344,6 +724,7 @@ let currentUser = null;
 let userData = null;
 let skinImage = null;
 let selectedColor = '#7ee8fa';
+
 const SHOP_SKINS = [
   { id: 'neon', name: 'Neon', price: 50, color: '#ff6b6b' },
   { id: 'ocean', name: 'Ocean', price: 50, color: '#4dabf7' },
@@ -356,7 +737,7 @@ const SHOP_SKINS = [
   { id: 'lava', name: 'Lava', price: 300, color: '#ff922b' },
 ];
 
-// ---------- Sizing ----------
+// ---------- Canvas Sizing ----------
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -375,12 +756,7 @@ const state = {
   zoom: 1.0,
   showGrid: true,
   showNames: true,
-  player: {
-    x: 0, y: 0, radius: 20, mass: 20,
-    color: '#7ee8fa',
-    name: 'Pemain',
-    cells: [{ x: 0, y: 0, radius: 20 }]
-  },
+  player: { x: 0, y: 0, radius: 20, mass: 20, color: '#7ee8fa', name: 'Pemain', cells: [{ x: 0, y: 0, radius: 20 }] },
   foods: [],
   viruses: [],
   bots: [],
@@ -391,12 +767,14 @@ const state = {
   totalEarnedExp: 0,
 };
 
-// ---------- Colors ----------
-const botColors = ['#ff6b6b','#ffa94d','#fcc419','#69db7c','#4dabf7','#9775fa','#f06595','#20c997','#748ffc','#ff922b'];
-function randomColor() { return botColors[Math.floor(Math.random() * botColors.length)]; }
+// ---------- Utility ----------
 function dist(a, b) { return Math.hypot(a.x - b.x, a.y - b.y); }
 function rand(min, max) { return Math.random() * (max - min) + min; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
+function randomColor() { 
+  const colors = ['#ff6b6b','#ffa94d','#fcc419','#69db7c','#4dabf7','#9775fa','#f06595','#20c997'];
+  return colors[Math.floor(Math.random() * colors.length)];
+}
 
 // ---------- EXP System ----------
 function expForLevel(level) {
@@ -661,7 +1039,6 @@ function render() {
 function drawCell(x, y, radius, color, name, mass, isPlayer = false) {
   const r = radius * state.zoom;
   
-  // Draw skin image if available
   if (isPlayer && skinImage) {
     ctx.save();
     ctx.beginPath();
@@ -669,7 +1046,6 @@ function drawCell(x, y, radius, color, name, mass, isPlayer = false) {
     ctx.clip();
     ctx.drawImage(skinImage, x - r, y - r, r * 2, r * 2);
     ctx.restore();
-    // Overlay color tint
     ctx.beginPath();
     ctx.arc(x, y, r, 0, Math.PI * 2);
     ctx.fillStyle = color + '40';
@@ -729,7 +1105,6 @@ function updateHUD() {
   playerMassEl.textContent = `⚪ ${Math.floor(p.mass)}`;
   playerScoreEl.textContent = `⭐ ${state.totalEarnedExp}`;
   
-  // Level & EXP
   const levelInfo = getLevel(state.totalEarnedExp);
   state.level = levelInfo.level;
   playerLevelEl.textContent = `Level ${levelInfo.level}`;
@@ -743,10 +1118,8 @@ async function gameOver(message) {
   state.running = false;
   if (gameLoopId) cancelAnimationFrame(gameLoopId);
   
-  // Calculate EXP earned
   const earnedExp = state.gameExp;
   
-  // Save to Firebase
   if (currentUser && db) {
     try {
       const userRef = doc(db, 'users', currentUser.uid);
@@ -803,20 +1176,11 @@ function renderShop() {
     const isOwned = owned.includes(skin.id);
     const isActive = activeSkin === skin.id;
     
-    div.style.cssText = `
-      background: ${isActive ? 'rgba(126,232,250,0.2)' : 'rgba(255,255,255,0.04)'};
-      border: 2px solid ${isActive ? '#7ee8fa' : 'rgba(255,255,255,0.06)'};
-      border-radius: 12px;
-      padding: 12px;
-      text-align: center;
-      cursor: ${isOwned ? 'pointer' : 'default'};
-      transition: all 0.2s;
-    `;
-    
+    div.className = 'shop-item' + (isActive ? ' active' : '');
     div.innerHTML = `
-      <div style="width:40px;height:40px;border-radius:50%;background:${skin.color};margin:0 auto 6px;box-shadow:0 0 20px ${skin.color}40;"></div>
-      <div style="font-size:13px;font-weight:600;color:#fff;">${skin.name}</div>
-      <div style="font-size:11px;color:#666;">${isOwned ? (isActive ? '✓ Aktif' : 'Milik') : skin.price + ' poin'}</div>
+      <div class="swatch" style="background:${skin.color};"></div>
+      <div class="sname">${skin.name}</div>
+      <div class="sprice">${isOwned ? (isActive ? '✓ Aktif' : 'Milik') : skin.price + ' poin'}</div>
     `;
     
     if (isOwned) {
@@ -828,6 +1192,7 @@ function renderShop() {
           userData.activeSkin = skin.id;
           state.player.color = skin.color;
           selectedColor = skin.color;
+          colorPicker.value = skin.color;
           renderShop();
           updateHUD();
         }
@@ -856,7 +1221,7 @@ function renderShop() {
   }
 }
 
-// ---------- Auth Functions ----------
+// ---------- Auth ----------
 function showAuthMsg(msg, isError = true) {
   authMsg.textContent = msg;
   authMsg.className = 'msg ' + (isError ? 'error' : 'success');
@@ -866,7 +1231,6 @@ function showAuthMsg(msg, isError = true) {
 
 async function handleLogin(e) {
   e.preventDefault();
-  if (!auth) { showAuthMsg('Firebase belum dikonfigurasi!'); return; }
   const email = loginEmail.value.trim();
   const pass = loginPass.value;
   try {
@@ -879,13 +1243,13 @@ async function handleLogin(e) {
 
 async function handleRegister(e) {
   e.preventDefault();
-  if (!auth) { showAuthMsg('Firebase belum dikonfigurasi!'); return; }
   const name = regName.value.trim();
   const email = regEmail.value.trim();
   const pass = regPass.value;
   if (!name) { showAuthMsg('Nama harus diisi!'); return; }
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(cred.user, { displayName: name });
     await setDoc(doc(db, 'users', cred.user.uid), {
       displayName: name,
       email: email,
@@ -905,7 +1269,7 @@ async function handleRegister(e) {
 }
 
 async function handleLogout() {
-  if (auth) await signOut(auth);
+  await signOut(auth);
   currentUser = null;
   userData = null;
   skinImage = null;
@@ -919,68 +1283,72 @@ async function handleLogout() {
 }
 
 // ---------- Auth State ----------
-if (auth) {
-  onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      currentUser = user;
-      try {
-        const docRef = doc(db, 'users', user.uid);
-        const docSnap = await getDoc(docRef);
-        if (docSnap.exists()) {
-          userData = docSnap.data();
-          welcomeName.textContent = userData.displayName || user.displayName || 'Pemain';
-          welcomeTitle.textContent = 'Siap bertarung!';
-          userLevel.textContent = userData.level || 1;
-          userPoints.textContent = userData.totalExp || 0;
-          bestMass.textContent = userData.bestMass || 0;
-          gamesPlayed.textContent = userData.gamesPlayed || 0;
-          selectedColor = userData.skinColor || '#7ee8fa';
-          if (userData.activeSkin) {
-            const skin = SHOP_SKINS.find(s => s.id === userData.activeSkin);
-            if (skin) selectedColor = skin.color;
-          }
-          // Load skin image
-          if (userData.skinUrl) {
-            try {
-              const img = new Image();
-              img.src = userData.skinUrl;
-              img.onload = () => { skinImage = img; avatarPreview.innerHTML = ''; avatarPreview.style.backgroundImage = `url(${userData.skinUrl})`; avatarPreview.style.backgroundSize = 'cover'; };
-            } catch(e) {}
-          }
-        } else {
-          await setDoc(docRef, {
-            displayName: user.displayName || 'Pemain',
-            email: user.email,
-            totalExp: 0,
-            gamesPlayed: 0,
-            bestMass: 0,
-            level: 1,
-            ownedSkins: ['default'],
-            activeSkin: 'default',
-            skinColor: '#7ee8fa',
-            createdAt: new Date().toISOString()
-          });
-          userData = { displayName: user.displayName || 'Pemain', totalExp: 0, gamesPlayed: 0, bestMass: 0, level: 1, ownedSkins: ['default'], activeSkin: 'default', skinColor: '#7ee8fa' };
-          welcomeName.textContent = userData.displayName;
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    try {
+      const docRef = doc(db, 'users', user.uid);
+      const docSnap = await getDoc(docRef);
+      if (docSnap.exists()) {
+        userData = docSnap.data();
+        welcomeName.textContent = userData.displayName || user.displayName || 'Pemain';
+        welcomeTitle.textContent = 'Siap bertarung!';
+        userLevel.textContent = userData.level || 1;
+        userPoints.textContent = userData.totalExp || 0;
+        bestMass.textContent = userData.bestMass || 0;
+        gamesPlayed.textContent = userData.gamesPlayed || 0;
+        selectedColor = userData.skinColor || '#7ee8fa';
+        colorPicker.value = selectedColor;
+        if (userData.activeSkin) {
+          const skin = SHOP_SKINS.find(s => s.id === userData.activeSkin);
+          if (skin) selectedColor = skin.color;
         }
-      } catch (e) {
-        console.error('Get user data error:', e);
-        userData = { displayName: user.displayName || 'Pemain', totalExp: 0, gamesPlayed: 0, bestMass: 0, level: 1 };
+        if (userData.skinUrl) {
+          try {
+            const img = new Image();
+            img.src = userData.skinUrl;
+            img.onload = () => { 
+              skinImage = img;
+              avatarPreview.style.backgroundImage = `url(${userData.skinUrl})`;
+              avatarPreview.style.backgroundSize = 'cover';
+              avatarPreview.textContent = '';
+            };
+          } catch(e) {}
+        }
+      } else {
+        await setDoc(docRef, {
+          displayName: user.displayName || 'Pemain',
+          email: user.email,
+          totalExp: 0,
+          gamesPlayed: 0,
+          bestMass: 0,
+          level: 1,
+          ownedSkins: ['default'],
+          activeSkin: 'default',
+          skinColor: '#7ee8fa',
+          createdAt: new Date().toISOString()
+        });
+        userData = { displayName: user.displayName || 'Pemain', totalExp: 0, gamesPlayed: 0, bestMass: 0, level: 1, ownedSkins: ['default'], activeSkin: 'default', skinColor: '#7ee8fa' };
+        welcomeName.textContent = userData.displayName;
       }
-      loginOverlay.classList.add('hidden');
-      startOverlay.classList.remove('hidden');
-    } else {
-      currentUser = null;
-      userData = null;
-      skinImage = null;
-      loginOverlay.classList.remove('hidden');
-      startOverlay.classList.add('hidden');
-      deathOverlay.classList.add('hidden');
-      pauseOverlay.classList.add('hidden');
-      shopOverlay.classList.add('hidden');
+    } catch (e) {
+      console.error('Get user data error:', e);
+      userData = { displayName: user.displayName || 'Pemain', totalExp: 0, gamesPlayed: 0, bestMass: 0, level: 1 };
     }
-  });
-}
+    loginOverlay.classList.add('hidden');
+    startOverlay.classList.remove('hidden');
+    setupBanner.style.display = 'none';
+  } else {
+    currentUser = null;
+    userData = null;
+    skinImage = null;
+    loginOverlay.classList.remove('hidden');
+    startOverlay.classList.add('hidden');
+    deathOverlay.classList.add('hidden');
+    pauseOverlay.classList.add('hidden');
+    shopOverlay.classList.add('hidden');
+  }
+});
 
 // ---------- Event Listeners ----------
 // Tabs
@@ -1042,9 +1410,9 @@ skinFile.addEventListener('change', async (e) => {
     const img = new Image();
     img.onload = () => {
       skinImage = img;
-      avatarPreview.innerHTML = '';
       avatarPreview.style.backgroundImage = `url(${url})`;
       avatarPreview.style.backgroundSize = 'cover';
+      avatarPreview.textContent = '';
     };
     img.src = url;
     await updateDoc(doc(db, 'users', currentUser.uid), {
@@ -1142,7 +1510,7 @@ function idleRender() {
 }
 idleRender();
 
-console.log('🍄 Blob Arena FULL VERSION loaded!');
+console.log('🍄 Blob Arena FULL VERSION with Firebase ready!');
 </script>
 </body>
 </html>
